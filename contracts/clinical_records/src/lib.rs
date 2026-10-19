@@ -1,6 +1,8 @@
 #![no_std]
 #![allow(clippy::too_many_arguments, clippy::large_enum_variant)]
 
+extern crate alloc;
+
 pub mod admin;
 pub mod errors;
 pub mod events;
@@ -14,7 +16,9 @@ mod test;
 pub use errors::ContractError;
 pub use types::*;
 
-use soroban_sdk::{contract, contractimpl, Address, Env, String};
+use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec};
+
+use fhir::types::{MedicationRequest, Observation};
 
 #[contract]
 pub struct ClinicalRecordsContract;
@@ -77,6 +81,51 @@ impl ClinicalRecordsContract {
         record_id: u64,
     ) -> Result<EyeExamination, ContractError> {
         examination::get_eye_examination(&env, caller, record_id)
+    }
+
+    /// Map a stored [`EyeExamination`] to a list of FHIR R4 [`Observation`]
+    /// resources (visual acuity, IOP, eye-exam narrative).
+    ///
+    /// Each observation carries a canonical LOINC system URI, `status`,
+    /// `subject`, and `effective[x]` so it passes
+    /// [`FhirContract::validate_eye_exam_observation`].
+    ///
+    /// # Errors
+    /// * `Unauthorized`  – caller is not the configured vision-records contract.
+    /// * `RecordNotFound`– no examination exists for `record_id`.
+    pub fn get_eye_examination_fhir(
+        env: Env,
+        caller: Address,
+        record_id: u64,
+        subject_id: String,
+    ) -> Result<Vec<Observation>, ContractError> {
+        let exam = examination::get_eye_examination(&env, caller, record_id)?;
+        Ok(examination::eye_examination_to_fhir(
+            &env, &exam, subject_id,
+        ))
+    }
+
+    /// Map a stored [`Prescription`] to a FHIR R4 [`MedicationRequest`].
+    ///
+    /// `medication[x]` uses SNOMED CT Eye glasses (`50121007`) or Contact
+    /// lenses (`57368009`) coded per `lens_type`; per-eye lens parameters
+    /// (sphere / cylinder / axis / addition / PD) are carried in
+    /// `dosage_text` with the LOINC EYE.GLASSES prescription codes. The
+    /// result always satisfies the fhir contract's
+    /// `validate_medication_request` rules.
+    ///
+    /// # Errors
+    /// * `Unauthorized`  – caller is not the configured vision-records
+    ///   contract.
+    /// * `RecordNotFound`– no prescription exists for `id`.
+    pub fn get_prescription_fhir(
+        env: Env,
+        caller: Address,
+        id: u64,
+        subject_id: String,
+    ) -> Result<MedicationRequest, ContractError> {
+        let rx = prescription::get_prescription(&env, caller, id)?;
+        Ok(prescription::prescription_to_fhir(&env, &rx, subject_id))
     }
 
     pub fn prepare_add_prescription(

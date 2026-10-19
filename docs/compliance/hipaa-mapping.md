@@ -148,6 +148,46 @@ pub fn log_access(
 }
 ```
 
+### Retention Requirement (45 CFR § 164.316(b)(2)(i))
+
+HIPAA requires audit documentation to be retained for **six years** from the
+date of its creation or the date when it was last in effect, whichever is
+later.
+
+**Implementation**: the audit crate models this with `RetentionPolicy`,
+whose `min_retention_secs` blocks compaction (deletion) of any entry until
+the six-year window has elapsed.  The verified retention window is:
+
+```rust
+// From contracts/audit/tests/hipaa_compliance_test.rs
+// Six 365-day years plus two leap-day allowances.
+pub const HIPAA_RETENTION_SECS: u64 = (6 * 365 + 2) * 86_400; // 189_388_800
+```
+
+**Enforcement**:
+
+```rust
+let mut log = MerkleLog::new(seg("hipaa"));
+log.set_retention(RetentionPolicy {
+    segment: seg("hipaa"),
+    min_retention_secs: HIPAA_RETENTION_SECS,
+    requires_witness_for_deletion: false,
+});
+
+// Deleting an entry before six years fails:
+// Err(AuditError::RetentionPolicyViolation { .. })
+log.compact(1, 1, created_at + HIPAA_RETENTION_SECS - 1, 0)?;
+
+// Deleting at or after the six-year boundary succeeds:
+log.compact(1, 1, created_at + HIPAA_RETENTION_SECS, 0)?;
+```
+
+**Verification tests**: `contracts/audit/tests/hipaa_compliance_test.rs`
+covers the full trail: every PHI access creates an entry (who/what/when/
+where), the hash chain and Merkle root make entries immutable and
+tamper-evident, and retention rejects premature deletion while permitting it
+after six years.
+
 ### Encryption Implementation
 
 **Data Protection Strategy**:

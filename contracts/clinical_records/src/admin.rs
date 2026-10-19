@@ -11,7 +11,9 @@ pub fn initialize(env: &Env, admin: Address, vision_records: Address) -> Result<
     }
     admin.require_auth();
     env.storage().instance().set(&ADMIN, &admin);
-    env.storage().instance().set(&VISION_RECORDS, &vision_records);
+    env.storage()
+        .instance()
+        .set(&VISION_RECORDS, &vision_records);
     env.storage().instance().set(&INITIALIZED, &true);
     Ok(())
 }
@@ -33,7 +35,9 @@ pub fn set_vision_records_contract(
     if admin != stored_admin {
         return Err(ContractError::Unauthorized);
     }
-    env.storage().instance().set(&VISION_RECORDS, &vision_records);
+    env.storage()
+        .instance()
+        .set(&VISION_RECORDS, &vision_records);
     Ok(())
 }
 

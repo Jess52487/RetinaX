@@ -16,6 +16,7 @@ path = "tests/clinical_records_test.rs"
 
 [dependencies]
 soroban-sdk = { workspace = true }
+fhir = { path = "../fhir" }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
