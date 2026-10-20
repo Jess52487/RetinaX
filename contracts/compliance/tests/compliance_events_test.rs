@@ -220,7 +220,12 @@ fn test_event_ordering_registration_then_update() {
     let topics_list: Vec<Symbol> = events
         .events()
         .iter()
-        .filter_map(|event| event_body(event).topics.get(0).and_then(|t| t.try_into_val(&env).ok()))
+        .filter_map(|event| {
+            event_body(event)
+                .topics
+                .get(0)
+                .and_then(|t| t.try_into_val(&env).ok())
+        })
         .collect();
 
     let reg_pos = topics_list

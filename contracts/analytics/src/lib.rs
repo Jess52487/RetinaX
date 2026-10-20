@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 pub mod aggregation;
 pub mod differential_privacy;
 pub mod events;
@@ -75,7 +77,6 @@ trait MetricSourceInterface {
 pub struct AnalyticsContract;
 
 #[contractimpl]
-#[allow(clippy::too_many_arguments)]
 impl AnalyticsContract {
     pub fn initialize(
         env: Env,

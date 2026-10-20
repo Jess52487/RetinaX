@@ -4,9 +4,7 @@ use super::{
     approve, configure, get_config, get_proposal, is_executable, mark_executed, propose,
     MultisigError,
 };
-use soroban_sdk::{
-    contract, symbol_short, testutils::Address as _, Address, BytesN, Env, Vec,
-};
+use soroban_sdk::{contract, symbol_short, testutils::Address as _, Address, BytesN, Env, Vec};
 
 #[contract]
 struct MockContract;
@@ -311,7 +309,11 @@ fn test_no_double_counting_of_approvals() {
         assert_eq!(approve(&env, &s2, id), Err(MultisigError::AlreadyApproved));
 
         let prop = get_proposal(&env, id).unwrap();
-        assert_eq!(prop.approvals.len(), 2, "Approvals length must strictly equal 2 unique signers");
+        assert_eq!(
+            prop.approvals.len(),
+            2,
+            "Approvals length must strictly equal 2 unique signers"
+        );
 
         // Threshold of 3 cannot be met by repeated attempts from s1 or s2
         assert!(!is_executable(&env, id));
@@ -328,7 +330,10 @@ fn test_approval_after_execution_and_nonexistent_proposal() {
         configure(&env, signers, 1).unwrap();
 
         // Non-existent proposal ID
-        assert_eq!(approve(&env, &s1, 9999), Err(MultisigError::ProposalNotFound));
+        assert_eq!(
+            approve(&env, &s1, 9999),
+            Err(MultisigError::ProposalNotFound)
+        );
 
         // Create and execute proposal
         let id = propose(

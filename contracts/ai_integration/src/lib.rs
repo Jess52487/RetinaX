@@ -1,4 +1,5 @@
 #![no_std]
+#![allow(clippy::too_many_arguments)]
 
 #[cfg(test)]
 mod test;
@@ -113,7 +114,6 @@ pub struct AnalysisResult {
 pub struct AiIntegrationContract;
 
 #[contractimpl]
-#[allow(clippy::too_many_arguments)]
 impl AiIntegrationContract {
     pub fn initialize(
         env: Env,

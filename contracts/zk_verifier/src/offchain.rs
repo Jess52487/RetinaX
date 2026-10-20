@@ -1,12 +1,10 @@
 use crate::audit::AuditTrail;
 use crate::ContractError;
+use crate::NONCE;
 use soroban_sdk::{contracttype, symbol_short, Address, Bytes, BytesN, Env, Symbol};
 
 /// Storage key prefix for trusted off-chain verifier public keys: `(TRUST_V, BytesN<32>)`.
 pub const TRUST_V: Symbol = symbol_short!("TRUST_V");
-
-/// Nonce storage prefix for anti-replay protection.
-pub const NONCE: Symbol = symbol_short!("NONCE");
 
 /// Off-chain Zero-Knowledge verification payload signed by an authorized verifier node.
 ///

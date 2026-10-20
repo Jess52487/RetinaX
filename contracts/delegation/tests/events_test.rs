@@ -1,4 +1,7 @@
-use soroban_sdk::{testutils::{Address as _, Events as _}, Env};
+use soroban_sdk::{
+    testutils::{Address as _, Events as _},
+    Env,
+};
 use teye_delegation::{DelegationContract, DelegationContractClient};
 
 #[test]

@@ -3,14 +3,8 @@
 
 extern crate std;
 
-use identity::{
-    recovery::RecoveryError,
-    IdentityContract, IdentityContractClient,
-};
-use soroban_sdk::{
-    testutils::Address as _,
-    Address, Env,
-};
+use identity::{recovery::RecoveryError, IdentityContract, IdentityContractClient};
+use soroban_sdk::{testutils::Address as _, Address, Env};
 
 /// Helper: Instantiate uninitialized Identity Contract
 fn setup_uninit() -> (Env, Address, IdentityContractClient<'static>) {

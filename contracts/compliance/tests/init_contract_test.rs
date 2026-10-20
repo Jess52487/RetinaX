@@ -1,5 +1,4 @@
 #![cfg(feature = "legacy-compliance-contract-tests")]
-
 #![allow(clippy::unwrap_used)]
 use soroban_sdk::{testutils::Accounts, Address, Env};
 // Assume ComplianceContract and ComplianceContractClient exist and are exported

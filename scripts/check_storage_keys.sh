@@ -41,13 +41,6 @@ for contract in "$CONTRACTS_DIR"/*/; do
         
         duplicates=$(echo "$const_definitions" | uniq -d)
         
-
-        # Find constant symbol key definitions for collision detection.
-        const_definitions=$(grep -r "const .*Symbol = symbol_short!(" "$contract/src" | \
-                            sed -n 's/.*symbol_short!("\([^"]*\)").*/\1/p' | \
-                            sort)
-
-        duplicates=$(echo "$const_definitions" | uniq -
         if [ -n "$duplicates" ]; then
             echo "Collision(s) found in contract: $contract_name"
             while IFS= read -r dup; do

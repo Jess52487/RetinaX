@@ -920,8 +920,22 @@ fn test_duplicate_payload_gets_distinct_ids_and_ordered_replay() {
     register_schema(&env, &client, &admin, "records.vision.create", 1);
 
     // Submit the "same event" twice: both are accepted but distinguishable.
-    let id1 = publish_test_event(&env, &client, &admin, "records.vision.create", 1, "same_payload");
-    let id2 = publish_test_event(&env, &client, &admin, "records.vision.create", 1, "same_payload");
+    let id1 = publish_test_event(
+        &env,
+        &client,
+        &admin,
+        "records.vision.create",
+        1,
+        "same_payload",
+    );
+    let id2 = publish_test_event(
+        &env,
+        &client,
+        &admin,
+        "records.vision.create",
+        1,
+        "same_payload",
+    );
     assert_ne!(id1, id2);
     assert_eq!(client.get_event_count(), 2);
 
@@ -929,9 +943,7 @@ fn test_duplicate_payload_gets_distinct_ids_and_ordered_replay() {
     let events = client.replay_events(&1, &10);
     assert_eq!(events.len(), 2);
     assert!(events.get(0).unwrap().event_id < events.get(1).unwrap().event_id);
-    assert!(
-        events.get(0).unwrap().lamport_ts < events.get(1).unwrap().lamport_ts
-    );
+    assert!(events.get(0).unwrap().lamport_ts < events.get(1).unwrap().lamport_ts);
 }
 
 #[test]

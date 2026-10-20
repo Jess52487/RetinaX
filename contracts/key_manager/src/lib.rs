@@ -86,11 +86,15 @@ mod hierarchy;
 mod rotation;
 
 use soroban_sdk::{
-    contract, contracterror, contractimpl, contracttype, symbol_short, Address, Bytes, BytesN, Env,
-    Symbol, Vec,
+    contract, contractclient, contracterror, contractimpl, contracttype, symbol_short, Address,
+    Bytes, BytesN, Env, Symbol, Vec,
 };
 
-use identity::IdentityContractClient;
+#[contractclient(name = "IdentityContractClient")]
+trait IdentityContractInterface {
+    fn get_guardians(env: Env, owner: Address) -> Vec<Address>;
+    fn get_recovery_threshold(env: Env, owner: Address) -> u32;
+}
 
 use attestation::attest_record;
 use derivation::{derive_child_key, derive_record_key};

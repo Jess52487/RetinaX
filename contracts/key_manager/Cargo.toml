@@ -14,7 +14,7 @@ testutils = ["soroban-sdk/testutils"]
 
 [dependencies]
 soroban-sdk = { workspace = true }
-identity = { path = "../identity" }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+identity = { path = "../identity" }

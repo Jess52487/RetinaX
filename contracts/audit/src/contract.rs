@@ -1,3 +1,5 @@
+#![allow(clippy::too_many_arguments)]
+
 use soroban_sdk::{
     contract, contracterror, contractimpl, contracttype, symbol_short, Address, Env, Error,
     IntoVal, Symbol, Val, Vec,
@@ -50,7 +52,6 @@ const ADMIN: Symbol = symbol_short!("ADMIN");
 const SEGMENTS: Symbol = symbol_short!("SEGMENTS");
 
 #[contractimpl]
-#[allow(clippy::too_many_arguments)]
 impl AuditContract {
     /// Initialize the contract with an admin address.
     ///

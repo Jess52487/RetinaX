@@ -169,7 +169,11 @@ impl RulesEngine {
 
     /// Register a compliance rule.
     pub fn register_rule(&mut self, rule: ComplianceRule) {
-        if let Some(existing) = self.rules.iter_mut().find(|existing| existing.id == rule.id) {
+        if let Some(existing) = self
+            .rules
+            .iter_mut()
+            .find(|existing| existing.id == rule.id)
+        {
             *existing = rule;
         } else {
             self.rules.push(rule);

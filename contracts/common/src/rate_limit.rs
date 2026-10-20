@@ -321,7 +321,7 @@ mod tests {
         assert_eq!(state.window_start, 100);
 
         assert!(state.record_hit(90, &cfg)); // count = 3
-        // Saturated at limit 3; subsequent attempt rejected
+                                             // Saturated at limit 3; subsequent attempt rejected
         assert!(!state.record_hit(95, &cfg));
         assert_eq!(state.count, 3);
 
@@ -332,4 +332,3 @@ mod tests {
         assert_eq!(state.count, 1);
     }
 }
-

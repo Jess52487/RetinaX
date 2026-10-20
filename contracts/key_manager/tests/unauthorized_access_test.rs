@@ -6,9 +6,7 @@ extern crate std;
 use key_manager::{
     ContractError, KeyLevel, KeyManagerContract, KeyManagerContractClient, KeyPolicy, KeyType,
 };
-use soroban_sdk::{
-    symbol_short, testutils::Address as _, Address, BytesN, Env, Vec,
-};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, BytesN, Env, Vec};
 
 /// Helper: Setup initialized KeyManager contract instance
 fn setup_key_manager() -> (Env, KeyManagerContractClient<'static>, Address, Address) {
@@ -40,7 +38,8 @@ fn test_key_manager_unauthorized_access_attempts() {
     );
 
     // 2. Unauthorized attempt to update identity contract address
-    let err_set_identity = client.try_set_identity_contract(&unauthorized_user, &malicious_identity);
+    let err_set_identity =
+        client.try_set_identity_contract(&unauthorized_user, &malicious_identity);
     assert_eq!(
         err_set_identity,
         Err(Ok(ContractError::Unauthorized)),

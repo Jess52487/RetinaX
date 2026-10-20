@@ -55,11 +55,7 @@ struct MockRegionalAuthority;
 #[contractimpl]
 impl MockRegionalAuthority {
     /// Check if entity is on regional blacklist
-    pub fn is_blacklisted(
-        env: Env,
-        entity_id: SorobanString,
-        region: SorobanString,
-    ) -> bool {
+    pub fn is_blacklisted(env: Env, entity_id: SorobanString, region: SorobanString) -> bool {
         // Simulate blacklist checking logic
         let blacklisted_entities = if region == SorobanString::from_str(&env, "EU") {
             vec![

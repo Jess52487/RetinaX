@@ -11,7 +11,7 @@ mod auth_bypass_tests {
     fn test_stake_unauthorized_caller() {
         let env = Env::default();
         let unauthorized = Address::generate(&env);
-        
+
         // Attempt to stake without authorization
         // Should panic or return auth error
         panic!("unauthorized");
@@ -23,7 +23,7 @@ mod auth_bypass_tests {
         let env = Env::default();
         let owner = Address::generate(&env);
         let attacker = Address::generate(&env);
-        
+
         // Attacker tries to unstake owner's tokens
         // Should fail with unauthorized error
         panic!("unauthorized");
@@ -34,7 +34,7 @@ mod auth_bypass_tests {
     fn test_claim_rewards_unauthorized() {
         let env = Env::default();
         let unauthorized = Address::generate(&env);
-        
+
         // Try to claim rewards without proper authorization
         panic!("unauthorized");
     }
@@ -44,7 +44,7 @@ mod auth_bypass_tests {
     fn test_update_rewards_non_admin() {
         let env = Env::default();
         let non_admin = Address::generate(&env);
-        
+
         // Non-admin tries to update reward parameters
         panic!("unauthorized");
     }
@@ -54,7 +54,7 @@ mod auth_bypass_tests {
     fn test_set_loyalty_multiplier_patient_role() {
         let env = Env::default();
         let patient = Address::generate(&env);
-        
+
         // Patient role trying admin operation
         // Should fail with role hierarchy violation
         panic!("unauthorized");
@@ -65,10 +65,10 @@ mod auth_bypass_tests {
         // Verify correct error code returned (not panic)
         let env = Env::default();
         let unauthorized = Address::generate(&env);
-        
+
         // Mock unauthorized operation
         let result: Result<(), &str> = Err("auth_error");
-        
+
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), "auth_error");
     }
@@ -78,7 +78,7 @@ mod auth_bypass_tests {
     fn test_stake_expired_session() {
         let env = Env::default();
         let user = Address::generate(&env);
-        
+
         // Try to stake with expired session
         panic!("session_expired");
     }
@@ -87,7 +87,7 @@ mod auth_bypass_tests {
     #[should_panic(expected = "no_auth")]
     fn test_stake_no_auth_provided() {
         let env = Env::default();
-        
+
         // Attempt operation without any auth
         panic!("no_auth");
     }
