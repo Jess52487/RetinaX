@@ -51,4 +51,4 @@ jobs:
         run: cargo fmt --all -- --check
 
       - name: Check formatting (contracts)
-        run: cargo fmt --all -- --check --manifest-path contracts/vision_records/Cargo.toml
+        run: cargo fmt --manifest-path contracts/vision_records/Cargo.toml --all -- --check

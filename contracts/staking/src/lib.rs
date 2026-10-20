@@ -276,7 +276,7 @@ impl StakingContract {
         if amount <= 0 {
             return Err(ContractError::InvalidInput);
         }
-        if min_share_bps < 0 || min_share_bps > 10_000 {
+        if !(0..=10_000).contains(&min_share_bps) {
             return Err(ContractError::InvalidInput);
         }
 

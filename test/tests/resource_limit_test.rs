@@ -13,12 +13,12 @@
 //! - Resource tracking across contract calls
 
 #![cfg(test)]
-#![allow(clippy::unwrap_used, clippy::expect_used)]
+#![allow(clippy::unwrap_used, clippy::expect_used, deprecated)]
 
 extern crate std;
 
 use ai_integration::{AiIntegrationContract, AiIntegrationContractClient};
-use soroban_sdk::{testutils::Address as _, Address, Env, String, Vec};
+use soroban_sdk::{testutils::Address as _, Address, Env, String};
 
 // ── Test Helpers ──────────────────────────────────────────────────────────────
 

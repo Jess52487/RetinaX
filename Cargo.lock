@@ -2422,6 +2422,7 @@ name = "test-framework"
 version = "0.1.0"
 dependencies = [
  "access_control",
+ "ai_integration",
  "common",
  "identity",
  "key_manager",

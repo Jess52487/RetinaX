@@ -73,8 +73,6 @@ fn setup_contract(env: &Env) -> (ZkVerifierContractClient<'static>, Address) {
 fn create_offchain_proof(env: &Env) -> Proof {
     let nz1 = nonzero32(env, 1);
     let nz2 = nonzero32(env, 2);
-    let nz3 = nonzero32(env, 3);
-    let nz4 = nonzero32(env, 4);
 
     Proof {
         a: g1(env, nz1.clone(), nz1.clone()),

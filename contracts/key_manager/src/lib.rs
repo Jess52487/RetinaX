@@ -91,6 +91,7 @@ use soroban_sdk::{
 };
 
 #[contractclient(name = "IdentityContractClient")]
+#[allow(dead_code)]
 trait IdentityContractInterface {
     fn get_guardians(env: Env, owner: Address) -> Vec<Address>;
     fn get_recovery_threshold(env: Env, owner: Address) -> u32;

@@ -23,6 +23,8 @@ jobs:
         run: |
           set -euo pipefail
           max_bytes=524288
+          # The optimized BN254/Groth16 verifier artifact is larger than other contracts.
+          zk_verifier_max_bytes=2097152
           packages=$(cargo metadata --format-version 1 --no-deps | jq -r '.packages[] | select(any(.targets[]; any(.crate_types[]; . == "cdylib"))) | .name')
           test -n "$packages"
           for package in $packages; do
@@ -31,8 +33,12 @@ jobs:
             test -f "$wasm"
             size=$(wc -c < "$wasm")
             echo "$package: ${size} bytes"
-            if [ "$size" -gt "$max_bytes" ]; then
-              echo "${package} exceeds the 512 KiB WASM budget" >&2
+            package_max_bytes=$max_bytes
+            if [ "$package" = "zk_verifier" ]; then
+              package_max_bytes=$zk_verifier_max_bytes
+            fi
+            if [ "$size" -gt "$package_max_bytes" ]; then
+              echo "${package} exceeds its $((package_max_bytes / 1024)) KiB WASM budget" >&2
               exit 1
             fi
           done

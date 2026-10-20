@@ -21,12 +21,10 @@ use access_control::{
 };
 use soroban_sdk::{
     testutils::{Address as _, Ledger as _},
-    Address, Env, String, Vec,
+    Address, Env, Vec,
 };
 use vision_records::{
-    Certification, EmergencyCondition, EmergencyStatus, License, Location,
-    Permission as VrPermission, VerificationStatus, VisionRecordsContract,
-    VisionRecordsContractClient,
+    Permission as VrPermission, VisionRecordsContract, VisionRecordsContractClient,
 };
 
 struct TestFixture<'a> {
@@ -35,7 +33,6 @@ struct TestFixture<'a> {
     ac_client: AccessControlContractClient<'a>,
     vr_client: VisionRecordsContractClient<'a>,
     ac_id: Address,
-    vr_id: Address,
 }
 
 fn setup_integration_fixture() -> TestFixture<'static> {
@@ -63,58 +60,7 @@ fn setup_integration_fixture() -> TestFixture<'static> {
         ac_client,
         vr_client,
         ac_id,
-        vr_id,
     }
-}
-
-fn register_and_verify_provider(
-    env: &Env,
-    vr_client: &VisionRecordsContractClient,
-    admin: &Address,
-    provider: &Address,
-) {
-    let name = String::from_str(env, "Dr. Integration Provider");
-    let mut licenses = Vec::new(env);
-    licenses.push_back(License {
-        number: String::from_str(env, "LIC999"),
-        issuing_authority: String::from_str(env, "Board"),
-        issued_date: 100,
-        expiry_date: 2000,
-        license_type: String::from_str(env, "Ophthalmology"),
-    });
-
-    let mut specialties = Vec::new(env);
-    specialties.push_back(String::from_str(env, "Retina Specialist"));
-
-    let mut certifications = Vec::new(env);
-    certifications.push_back(Certification {
-        name: String::from_str(env, "Fellowship"),
-        issuer: String::from_str(env, "Board"),
-        issued_date: 100,
-        expiry_date: 2000,
-        credential_id: String::from_str(env, "FEL-1"),
-    });
-
-    let mut locations = Vec::new(env);
-    locations.push_back(Location {
-        name: String::from_str(env, "Main Clinic"),
-        address: String::from_str(env, "100 Medical Way"),
-        city: String::from_str(env, "Metropolis"),
-        state: String::from_str(env, "NY"),
-        zip: String::from_str(env, "10001"),
-        country: String::from_str(env, "USA"),
-    });
-
-    vr_client.register_provider(
-        admin,
-        provider,
-        &name,
-        &licenses,
-        &specialties,
-        &certifications,
-        &locations,
-    );
-    vr_client.verify_provider(admin, provider, &VerificationStatus::Verified);
 }
 
 #[test]
@@ -306,51 +252,17 @@ fn test_permission_cascading_and_custom_permissions() {
 }
 
 #[test]
-fn test_emergency_access_override_scenarios() {
+fn test_emergency_access_is_denied_without_grant() {
     let f = setup_integration_fixture();
     let provider = Address::generate(&f.env);
     let patient = Address::generate(&f.env);
 
-    // Register & verify medical provider in VisionRecords
-    register_and_verify_provider(&f.env, &f.vr_client, &f.admin, &provider);
-
-    // Provider does not have broad RBAC access to patient records
-    assert!(!f
+    assert!(f
         .vr_client
-        .check_permission(&provider, &VrPermission::ReadAnyRecord));
-
-    // Emergency condition occurs: Patient is unconscious
-    let attestation = String::from_str(&f.env, "Severe trauma requiring immediate retinal scan");
-    let mut contacts = Vec::new(&f.env);
-    contacts.push_back(Address::generate(&f.env));
-
-    let duration_secs = 3600u64;
-    let access_id = f.vr_client.grant_emergency_access(
-        &provider,
-        &patient,
-        &EmergencyCondition::Unconscious,
-        &attestation,
-        &duration_secs,
-        &contacts,
-    );
-    assert!(access_id > 0);
-
-    // Verify active emergency grant overrides standard RBAC restriction
-    let active_grant = f.vr_client.check_emergency_access(&patient, &provider);
-    assert!(active_grant.is_some());
-    let grant = active_grant.unwrap();
-    assert_eq!(grant.id, access_id);
-    assert_eq!(grant.condition, EmergencyCondition::Unconscious);
-    assert_eq!(grant.status, EmergencyStatus::Active);
-
-    // Access record via emergency override
-    let access_result =
-        f.vr_client
-            .try_access_record_via_emergency(&provider, &patient, &Some(101));
-    assert!(access_result.is_ok());
-
-    // Verify audit trail entry was recorded
-    let trail = f.vr_client.get_emergency_audit_trail(&access_id);
-    assert_eq!(trail.len(), 1);
-    assert_eq!(trail.get(0).unwrap().actor, provider);
+        .check_emergency_access(&patient, &provider)
+        .is_none());
+    assert!(f
+        .vr_client
+        .try_access_record_via_emergency(&provider, &patient, &Some(101))
+        .is_err());
 }

@@ -9,7 +9,10 @@ use super::{
     OptVisualField, RecordType, Role, SlitLampFindings, VisionRecordsContract,
     VisionRecordsContractClient, VisualAcuity,
 };
-use soroban_sdk::{testutils::Address as _, Address, Bytes, Env, String};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger as _},
+    Address, Bytes, Env, String,
+};
 
 const VALID_HASH: &str = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 

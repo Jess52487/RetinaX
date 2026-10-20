@@ -88,7 +88,7 @@ fn test_rounding_loss_within_tolerance_single_staker() {
     let diff = expected - pending;
 
     assert!(
-        diff >= 0 && diff <= 1,
+        (0..=1).contains(&diff),
         "Rounding loss should be at most 1 unit, got diff={}",
         diff
     );

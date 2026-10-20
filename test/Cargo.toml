@@ -17,6 +17,7 @@ proptest    = { version = "1" }
 
 [dev-dependencies]
 soroban-sdk = { version = "25.0.0", features = ["testutils"] }
+ai_integration = { path = "../contracts/ai_integration" }
 identity = { path = "../contracts/identity" }
 key_manager = { path = "../contracts/key_manager" }
 vision_records = { path = "../contracts/vision_records" }

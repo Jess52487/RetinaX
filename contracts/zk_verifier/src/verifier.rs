@@ -201,6 +201,7 @@ impl ProofSystemId {
 /// or post-quantum hash-based STARK / lattice proof payloads.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]
+#[allow(clippy::large_enum_variant)]
 pub enum ExtensibleProof {
     /// Pre-quantum Groth16 proof points over BN254 (256 bytes fixed).
     Groth16(Proof),

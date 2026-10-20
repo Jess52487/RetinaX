@@ -33,7 +33,7 @@ fn create_env() -> Env {
     Env::default()
 }
 
-fn register_governor(env: &Env) -> (Address, GovernorContractClient) {
+fn register_governor(env: &Env) -> (Address, GovernorContractClient<'_>) {
     let contract_id = env.register_contract(None, GovernorContract);
     let client = GovernorContractClient::new(env, &contract_id);
     (contract_id, client)
@@ -205,7 +205,7 @@ fn test_initialize_and_create_proposal() {
 #[test]
 fn test_create_proposal_requires_stake() {
     let env = create_env();
-    let (contract_id, client) = register_governor(&env);
+    let (_contract_id, client) = register_governor(&env);
     default_init(&env, &client);
 
     let proposer = Address::generate(&env);
@@ -263,8 +263,6 @@ fn test_full_lifecycle_happy_path() {
 
     // 4. Commit votes
     let salt_a = BytesN::from_array(&env, &[1u8; 32]);
-    let salt_b = BytesN::from_array(&env, &[2u8; 32]);
-
     // Compute commitments off-chain (same logic as hash_commitment in lib.rs).
     // For tests we use placeholder hashes and will not verify mismatch.
     // A full test would compute the exact SHA-256; here we test the flow.
