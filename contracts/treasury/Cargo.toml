@@ -20,6 +20,7 @@ soroban-sdk = { workspace = true }
 
 [dev-dependencies]
 soroban-sdk = { workspace = true, features = ["testutils"] }
+governor = { path = "../governor" }
 
 [features]
 testutils = ["soroban-sdk/testutils"]

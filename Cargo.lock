@@ -2382,6 +2382,7 @@ dependencies = [
 name = "treasury"
 version = "1.2.2"
 dependencies = [
+ "governor",
  "soroban-sdk",
 ]
 

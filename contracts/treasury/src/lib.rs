@@ -413,7 +413,13 @@ impl TreasuryContract {
     }
 
     pub fn get_proposal(env: Env, id: u64) -> Option<Proposal> {
-        env.storage().persistent().get(&proposal_key(id))
+        let mut proposal: Proposal = env.storage().persistent().get(&proposal_key(id))?;
+        if matches!(proposal.status, ProposalStatus::Pending)
+            && env.ledger().timestamp() >= proposal.expires_at
+        {
+            proposal.status = ProposalStatus::Expired;
+        }
+        Some(proposal)
     }
 
     pub fn approve_proposal(env: Env, signer: Address, id: u64) -> Result<(), ContractError> {
