@@ -69,6 +69,23 @@
   50% { opacity: 0.5; }
 }
 
+/* Subtle attention ring while the wallet is disconnected. */
+@keyframes connect-wallet-ring {
+  0% { box-shadow: var(--shadow-sm), 0 0 0 0 rgba(13, 148, 136, 0.45); }
+  70%, 100% { box-shadow: var(--shadow-sm), 0 0 0 10px rgba(13, 148, 136, 0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .connect-wallet-btn:not(.connected):not(:disabled) {
+    animation: connect-wallet-ring 2.4s ease-out infinite;
+  }
+
+  .connect-wallet-btn:not(.connected):hover,
+  .connect-wallet-btn:not(.connected):focus-visible {
+    animation: none;
+  }
+}
+
 .connect-wallet-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
