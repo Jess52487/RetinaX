@@ -1,11 +1,15 @@
 #![no_std]
 
 pub mod bridge;
+pub mod clinical_share;
 pub mod events;
 pub mod merkle_tree;
 pub mod relay;
 
 pub use bridge::{BridgeError, ExportPackage};
+pub use clinical_share::{
+    ClinicalShareMessage, ShareAuditEntry, MAX_SHARE_PAYLOAD_BYTES, SHARE_PROTOCOL_VERSION,
+};
 pub use merkle_tree::{FieldProof, MerkleProof};
 pub use relay::StateRootAnchor;
 
@@ -43,6 +47,12 @@ pub enum CrossChainError {
     UnknownIdentity = 5,
     UnsupportedAction = 6,
     ExternalCallFailed = 7,
+    InvalidMessage = 8,
+    MessageExpired = 9,
+    PayloadMismatch = 10,
+    ConsentRequired = 11,
+    PayloadTooLarge = 12,
+    UnsupportedVersion = 13,
 }
 
 #[contract]
@@ -274,7 +284,45 @@ impl CrossChainContract {
     pub fn get_latest_root(env: Env, chain_id: Symbol) -> Option<StateRootAnchor> {
         relay::get_latest_root(&env, chain_id)
     }
+
+    /// Share one clinical record with a foreign-chain grantee (issue #322).
+    ///
+    /// The patient must authorise the call, the ciphertext must match
+    /// `message.payload_hash`, and `vision_contract` must report an active
+    /// record-level grant to `message.grantee`. Returns the message ID.
+    pub fn share_clinical_record(
+        env: Env,
+        patient: Address,
+        message: ClinicalShareMessage,
+        ciphertext: Bytes,
+        vision_contract: Address,
+    ) -> Result<BytesN<32>, CrossChainError> {
+        clinical_share::share_record(&env, patient, message, ciphertext, vision_contract)
+    }
+
+    /// Check a clinical share without changing state. Receiving chains and
+    /// relayers call this before decrypting a payload.
+    pub fn verify_clinical_share(
+        env: Env,
+        message: ClinicalShareMessage,
+        ciphertext: Bytes,
+    ) -> Result<(), CrossChainError> {
+        clinical_share::validate_message(&env, &message, &ciphertext)
+    }
+
+    /// Read one entry from the clinical share audit log.
+    pub fn get_share_audit(env: Env, sequence: u64) -> Option<ShareAuditEntry> {
+        clinical_share::get_audit_entry(&env, sequence)
+    }
+
+    /// Number of entries in the clinical share audit log.
+    pub fn get_share_audit_count(env: Env) -> u64 {
+        clinical_share::audit_count(&env)
+    }
 }
 
 #[cfg(test)]
 mod test;
+
+#[cfg(test)]
+mod clinical_share_test;
