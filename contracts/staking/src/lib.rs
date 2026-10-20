@@ -378,6 +378,14 @@ impl StakingContract {
         let new_stake = prev_stake.saturating_sub(amount);
         env.storage().persistent().set(&user_stake_key, &new_stake);
 
+        // Fully exiting ends continuous staking, so the loyalty clock resets.
+        // Partial unstakes keep the original first-stake timestamp.
+        if new_stake == 0 {
+            env.storage()
+                .persistent()
+                .remove(&(USER_SINCE, staker.clone()));
+        }
+
         let prev_total: i128 = env.storage().instance().get(&TOTAL_STAKED).unwrap_or(0);
         let new_total = prev_total.saturating_sub(amount);
         env.storage().instance().set(&TOTAL_STAKED, &new_total);
@@ -1439,3 +1447,6 @@ mod test_reward_multiplier;
 
 #[cfg(test)]
 mod test_slippage;
+
+#[cfg(test)]
+mod test_loyalty_age;
