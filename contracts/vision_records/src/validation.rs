@@ -258,10 +258,7 @@ mod tests {
             validate_consent_id(&String::from_str(&env, "cst-001")),
             Ok(())
         );
-        assert_eq!(
-            validate_consent_id(&String::from_str(&env, "a")),
-            Ok(())
-        );
+        assert_eq!(validate_consent_id(&String::from_str(&env, "a")), Ok(()));
 
         // Too long consent ID (> 64)
         let long_id = "c".repeat(65);

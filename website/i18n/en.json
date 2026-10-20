@@ -73,6 +73,18 @@
     "cta": "Simulate Oracle Failover",
     "imageAlt": "AI diagnostic retinal scan dashboard"
   },
+  "faq": {
+    "title": "Frequently Asked Questions",
+    "desc": "Common questions about the RetinaX protocol, privacy architecture, and clinical data management.",
+    "q1": "How does RetinaX protect patient data privacy?",
+    "a1": "RetinaX uses client-side AES encryption before any data leaves the patient's device. Medical records are stored as encrypted payloads on IPFS, with only the content hash recorded on the Stellar blockchain. Zero-knowledge proofs (Groth16 zk-SNARKs) allow patients to prove medical eligibility without revealing personal health information.",
+    "q2": "What blockchain does RetinaX run on?",
+    "a2": "RetinaX is built on the Stellar network using Soroban smart contracts compiled to WebAssembly (WASM). Stellar provides approximately 5-second ledger finality and transaction fees below $0.0001, making it practical for high-frequency clinical record operations.",
+    "q3": "Is RetinaX compliant with healthcare regulations?",
+    "a3": "Yes. RetinaX implements HIPAA-compliant data handling through its compliance smart contract, including consent tracking, data classification, and audit trails. The protocol also enforces GDPR Article 25 data-protection-by-design principles and generates FHIR v4 interoperable clinical records with LOINC-coded diagnostic reports.",
+    "q4": "How do AI diagnostics work in RetinaX?",
+    "a4": "The AI integration contract manages a registry of diagnostic oracle providers that analyze retinal scans for conditions like diabetic retinopathy and glaucoma. On-chain SLA monitoring tracks provider response times, and the system automatically rotates to fallback oracles when a provider exceeds latency thresholds."
+  },
   "demo": {
     "title": "Interactive Protocol Playground",
     "desc": "Test real-time execution of role access grants, zero-knowledge proofs, AI oracle failovers, and FHIR v4 converters.",

@@ -1,9 +1,7 @@
 #![cfg(test)]
 
 use crate::{ContractError, VisionRecordsContract, VisionRecordsContractClient};
-use soroban_sdk::{
-    symbol_short, testutils::Address as _, Address, BytesN, Env, Vec,
-};
+use soroban_sdk::{symbol_short, testutils::Address as _, Address, BytesN, Env, Vec};
 
 fn setup_test() -> (Env, VisionRecordsContractClient<'static>, Address) {
     let env = Env::default();
@@ -37,7 +35,9 @@ fn test_multisig_threshold_boundary_1_of_1() {
     let data_hash = BytesN::from_array(&env, &[1u8; 32]);
     let prop_id = client.propose_admin_action(&s1, &action, &data_hash);
 
-    let prop = client.get_proposal(&prop_id).expect("Proposal should exist");
+    let prop = client
+        .get_proposal(&prop_id)
+        .expect("Proposal should exist");
     assert_eq!(prop.approvals.len(), 1);
     assert_eq!(prop.approvals.get(0).unwrap(), s1);
 }
@@ -90,14 +90,20 @@ fn test_multisig_duplicate_approval_rejection_no_double_counting() {
 
     // Proposer attempting to approve again must be rejected with Unauthorized
     let res_dup_proposer = client.try_approve_admin_action(&s1, &prop_id);
-    assert_eq!(res_dup_proposer.unwrap_err().unwrap(), ContractError::Unauthorized);
+    assert_eq!(
+        res_dup_proposer.unwrap_err().unwrap(),
+        ContractError::Unauthorized
+    );
 
     // Signer 2 approves once
     client.approve_admin_action(&s2, &prop_id);
 
     // Signer 2 attempting duplicate approval must be rejected
     let res_dup_s2 = client.try_approve_admin_action(&s2, &prop_id);
-    assert_eq!(res_dup_s2.unwrap_err().unwrap(), ContractError::Unauthorized);
+    assert_eq!(
+        res_dup_s2.unwrap_err().unwrap(),
+        ContractError::Unauthorized
+    );
 
     // Verify approval count did not double count
     let prop = client.get_proposal(&prop_id).unwrap();
@@ -122,11 +128,17 @@ fn test_multisig_approval_nonexistent_or_unauthorized_signer() {
 
     // Stranger cannot approve
     let err_stranger = client.try_approve_admin_action(&stranger, &prop_id);
-    assert_eq!(err_stranger.unwrap_err().unwrap(), ContractError::Unauthorized);
+    assert_eq!(
+        err_stranger.unwrap_err().unwrap(),
+        ContractError::Unauthorized
+    );
 
     // Approving non-existent proposal ID is rejected
     let err_nonexistent = client.try_approve_admin_action(&s1, &9999u64);
-    assert_eq!(err_nonexistent.unwrap_err().unwrap(), ContractError::Unauthorized);
+    assert_eq!(
+        err_nonexistent.unwrap_err().unwrap(),
+        ContractError::Unauthorized
+    );
 }
 
 #[test]
@@ -152,7 +164,10 @@ fn test_multisig_signer_removal_while_proposal_pending() {
 
     // Removed signer s2 attempting to approve is rejected
     let res_removed = client.try_approve_admin_action(&s2, &prop_id);
-    assert_eq!(res_removed.unwrap_err().unwrap(), ContractError::Unauthorized);
+    assert_eq!(
+        res_removed.unwrap_err().unwrap(),
+        ContractError::Unauthorized
+    );
 
     // Remaining valid signer s3 can approve
     let res_valid = client.try_approve_admin_action(&s3, &prop_id);

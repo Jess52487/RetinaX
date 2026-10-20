@@ -110,7 +110,7 @@
         : t('nav.connectWalletAria', {}, 'Connect Stellar Wallet');
 
       this.innerHTML = `
-        <button class="connect-wallet-btn ${this._connected ? 'connected' : ''} skeleton-fade-in" type="button" aria-label="${this._connected ? 'Wallet connected: ' + this._address : 'Connect Wallet'}">
+        <button class="connect-wallet-btn ${this._connected ? 'connected' : ''} skeleton-fade-in" type="button" aria-label="${ariaLabel}">
           <span class="connect-wallet-icon">
             ${
               this._connected

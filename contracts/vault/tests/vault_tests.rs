@@ -170,7 +170,8 @@ fn test_configure_and_get_vault_invariants() {
     let seed = BytesN::from_array(&env, &[7u8; 32]);
     let data_ref = String::from_str(&env, "ipfs://vault-config");
 
-    let snapshot: VaultSnapshot = vault.configure_vault(&owner, &2, &4, &3, &7200, &data_ref, &seed);
+    let snapshot: VaultSnapshot =
+        vault.configure_vault(&owner, &2, &4, &3, &7200, &data_ref, &seed);
 
     assert_eq!(snapshot.record.owner, owner);
     assert_eq!(snapshot.record.epoch, 1);
@@ -187,7 +188,10 @@ fn test_configure_and_get_vault_invariants() {
     assert_eq!(fetched, snapshot.record);
 
     let non_owner = Address::generate(&env);
-    assert_eq!(vault.try_get_vault(&non_owner), Err(Ok(VaultError::VaultNotFound)));
+    assert_eq!(
+        vault.try_get_vault(&non_owner),
+        Err(Ok(VaultError::VaultNotFound))
+    );
 }
 
 #[test]

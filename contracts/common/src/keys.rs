@@ -230,9 +230,7 @@ mod std_impl {
                 }
             }
 
-            for b in &mut self.master {
-                *b = 0;
-            }
+            self.master.fill(0);
             self.master = new_master;
             audit.record(actor, "rotate_master_secure", "master_key", now);
         }

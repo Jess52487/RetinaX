@@ -134,7 +134,12 @@ fn test_global_pause_blocks_all_mutating_ops() {
     let newcomer = Address::generate(&env);
     assert_eq!(
         client
-            .try_register_user(&admin, &newcomer, &Role::Patient, &String::from_str(&env, "New"))
+            .try_register_user(
+                &admin,
+                &newcomer,
+                &Role::Patient,
+                &String::from_str(&env, "New")
+            )
             .unwrap_err()
             .unwrap(),
         ContractError::Paused
@@ -150,7 +155,13 @@ fn test_global_pause_blocks_all_mutating_ops() {
     );
     assert_eq!(
         client
-            .try_grant_access(&patient, &patient, &doctor, &crate::AccessLevel::Read, &3600)
+            .try_grant_access(
+                &patient,
+                &patient,
+                &doctor,
+                &crate::AccessLevel::Read,
+                &3600
+            )
             .unwrap_err()
             .unwrap(),
         ContractError::Paused
@@ -308,7 +319,12 @@ fn test_unauthorized_resume_and_double_pause_resume() {
     let user = Address::generate(&env);
     assert_eq!(
         client
-            .try_register_user(&admin, &user, &Role::Patient, &String::from_str(&env, "Xena"))
+            .try_register_user(
+                &admin,
+                &user,
+                &Role::Patient,
+                &String::from_str(&env, "Xena")
+            )
             .unwrap_err()
             .unwrap(),
         ContractError::Paused

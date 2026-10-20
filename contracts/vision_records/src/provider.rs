@@ -110,7 +110,6 @@ pub fn is_provider_verified(env: &Env, provider: &Address) -> bool {
     }
 }
 
-
 pub fn set_provider(env: &Env, provider: &Provider) {
     let key = provider_key(&provider.address);
 

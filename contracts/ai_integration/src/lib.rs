@@ -113,6 +113,7 @@ pub struct AnalysisResult {
 pub struct AiIntegrationContract;
 
 #[contractimpl]
+#[allow(clippy::too_many_arguments)]
 impl AiIntegrationContract {
     pub fn initialize(
         env: Env,

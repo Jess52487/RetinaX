@@ -1,8 +1,4 @@
-use crate::{
-    events,
-    rbac::Permission,
-    ContractError,
-};
+use crate::{events, rbac::Permission, ContractError};
 use soroban_sdk::{contracttype, symbol_short, Address, Env, Symbol};
 use teye_common::admin_tiers::{self, AdminTier};
 
@@ -61,7 +57,8 @@ pub fn require_not_paused(env: &Env, scope: &PauseScope) -> Result<(), ContractE
 /// Requires at least `OperatorAdmin` tier, or the existing SystemAdmin RBAC permission.
 pub fn pause_contract(env: &Env, caller: &Address, scope: PauseScope) -> Result<(), ContractError> {
     let has_tier = admin_tiers::require_tier(env, caller, &AdminTier::OperatorAdmin);
-    let has_rbac = crate::VisionRecordsContract::has_permission_unified(env, caller, &Permission::SystemAdmin);
+    let has_rbac =
+        crate::VisionRecordsContract::has_permission_unified(env, caller, &Permission::SystemAdmin);
     if !has_tier && !has_rbac {
         return Err(ContractError::Unauthorized);
     }
@@ -90,7 +87,8 @@ pub fn resume_contract(
     scope: PauseScope,
 ) -> Result<(), ContractError> {
     let has_tier = admin_tiers::require_tier(env, caller, &AdminTier::OperatorAdmin);
-    let has_rbac = crate::VisionRecordsContract::has_permission_unified(env, caller, &Permission::SystemAdmin);
+    let has_rbac =
+        crate::VisionRecordsContract::has_permission_unified(env, caller, &Permission::SystemAdmin);
     if !has_tier && !has_rbac {
         return Err(ContractError::Unauthorized);
     }

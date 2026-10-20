@@ -73,6 +73,18 @@
     "cta": "Simular conmutación del oráculo",
     "imageAlt": "Panel de diagnóstico retiniano con IA"
   },
+  "faq": {
+    "title": "Preguntas frecuentes",
+    "desc": "Respuestas a preguntas comunes sobre el protocolo RetinaX, la arquitectura de privacidad y la gestión de datos clínicos.",
+    "q1": "¿Cómo protege RetinaX la privacidad de los datos de los pacientes?",
+    "a1": "RetinaX cifra los datos con AES en el dispositivo antes de que salgan de él. Los registros médicos se almacenan cifrados en IPFS y solo su hash de contenido se registra en la cadena de bloques Stellar. Las pruebas de conocimiento cero (zk-SNARK Groth16) permiten demostrar la aptitud médica sin revelar información personal de salud.",
+    "q2": "¿En qué cadena de bloques funciona RetinaX?",
+    "a2": "RetinaX está construido sobre la red Stellar y utiliza contratos inteligentes Soroban compilados a WebAssembly (WASM). Stellar ofrece una finalidad del libro mayor de aproximadamente 5 segundos y comisiones inferiores a 0,0001 $, lo que resulta práctico para operaciones clínicas frecuentes.",
+    "q3": "¿RetinaX cumple con las normativas sanitarias?",
+    "a3": "Sí. RetinaX aplica un tratamiento de datos conforme con HIPAA mediante su contrato inteligente de cumplimiento, que incluye seguimiento del consentimiento, clasificación de datos y registros de auditoría. El protocolo también aplica los principios de protección de datos desde el diseño del artículo 25 del RGPD y genera registros clínicos interoperables FHIR v4 con informes de diagnóstico codificados con LOINC.",
+    "q4": "¿Cómo funcionan los diagnósticos de IA en RetinaX?",
+    "a4": "El contrato de integración de IA administra un registro de proveedores de oráculos de diagnóstico que analizan exploraciones de retina para detectar afecciones como la retinopatía diabética y el glaucoma. La supervisión de SLA en cadena registra los tiempos de respuesta y el sistema cambia automáticamente a oráculos de respaldo cuando un proveedor supera los límites de latencia."
+  },
   "demo": {
     "title": "Laboratorio interactivo del protocolo",
     "desc": "Prueba en tiempo real la concesión de accesos por rol, las pruebas de conocimiento cero, la conmutación de oráculos de IA y los conversores FHIR v4.",

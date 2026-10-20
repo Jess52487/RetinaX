@@ -7,7 +7,10 @@ use crate::{
     },
     VisionRecordsContract,
 };
-use soroban_sdk::{testutils::{Address as _, Ledger as _}, Address, Env, String};
+use soroban_sdk::{
+    testutils::{Address as _, Ledger as _},
+    Address, Env, String,
+};
 
 fn setup_test() -> (Env, Address) {
     let env = Env::default();
@@ -49,7 +52,10 @@ fn test_burst_requests_at_rate_limit_exact_boundary() {
 
         // 4th request must be rejected at boundary
         let res4 = check_rate_limit(&env, &user, &op);
-        assert!(!res4.0, "4th request exceeding max_requests must be rejected");
+        assert!(
+            !res4.0,
+            "4th request exceeding max_requests must be rejected"
+        );
         assert_eq!(res4.1, 3, "Count must remain saturated at limit");
     });
 }
@@ -90,7 +96,10 @@ fn test_rate_limit_bypass_and_revocation() {
         let res2 = check_rate_limit(&env, &provider, &op);
         assert!(res2.0);
         let res3 = check_rate_limit(&env, &provider, &op);
-        assert!(!res3.0, "Provider must be rate limited after bypass revocation");
+        assert!(
+            !res3.0,
+            "Provider must be rate limited after bypass revocation"
+        );
     });
 }
 

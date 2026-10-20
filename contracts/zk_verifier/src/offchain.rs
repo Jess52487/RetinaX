@@ -1,8 +1,6 @@
 use crate::audit::AuditTrail;
 use crate::ContractError;
-use soroban_sdk::{
-    contracttype, symbol_short, Address, Bytes, BytesN, Env, Symbol,
-};
+use soroban_sdk::{contracttype, symbol_short, Address, Bytes, BytesN, Env, Symbol};
 
 /// Storage key prefix for trusted off-chain verifier public keys: `(TRUST_V, BytesN<32>)`.
 pub const TRUST_V: Symbol = symbol_short!("TRUST_V");
@@ -65,7 +63,7 @@ pub fn build_offchain_verification_message(
     let mut msg = Bytes::new(env);
     // Domain separation tag preventing cross-protocol signature replay
     msg.append(&Bytes::from_slice(env, b"retinax_zk_offchain_v1:"));
-    
+
     // User string representation (or serialized address)
     msg.append(&user.to_string().to_bytes());
     msg.append(&Bytes::from_slice(env, &resource_id.to_array()));
@@ -77,11 +75,7 @@ pub fn build_offchain_verification_message(
 }
 
 /// Registers or unregisters a trusted off-chain verifier node public key.
-pub fn set_trusted_verifier(
-    env: &Env,
-    verifier_pubkey: &BytesN<32>,
-    enabled: bool,
-) {
+pub fn set_trusted_verifier(env: &Env, verifier_pubkey: &BytesN<32>, enabled: bool) {
     let key = (TRUST_V, verifier_pubkey.clone());
     if enabled {
         env.storage().persistent().set(&key, &true);
@@ -147,11 +141,8 @@ pub fn verify_offchain_attestation(
     );
 
     // Verify Ed25519 signature natively via Soroban host crypto
-    env.crypto().ed25519_verify(
-        &payload.verifier_pubkey,
-        &msg,
-        &payload.signature,
-    );
+    env.crypto()
+        .ed25519_verify(&payload.verifier_pubkey, &msg, &payload.signature);
 
     // Log to HIPAA-compliant cryptographic audit trail
     AuditTrail::log_access(

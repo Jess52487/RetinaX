@@ -10,9 +10,7 @@ use common::setup_test_env;
 use soroban_sdk::testutils::{Address as _, Events, Ledger};
 use soroban_sdk::xdr::{ContractEventBody, ScVal};
 use soroban_sdk::{symbol_short, Address, Env, IntoVal, TryFromVal, Val, Vec};
-use vision_records::events::{
-    ConsentGrantedEvent, ConsentRevokedEvent, ConsentUpdatedEvent,
-};
+use vision_records::events::{ConsentGrantedEvent, ConsentRevokedEvent, ConsentUpdatedEvent};
 use vision_records::{ConsentType, ContractError};
 
 fn find_matching_event<T>(env: &Env, expected_topics: &Vec<Val>, expected_data: &T) -> bool
@@ -31,7 +29,9 @@ where
 
     for event in events.events() {
         let ContractEventBody::V0(body) = &event.body;
-        if body.topics.as_slice() == expected_topics_scval.as_slice() && body.data == expected_data_scval {
+        if body.topics.as_slice() == expected_topics_scval.as_slice()
+            && body.data == expected_data_scval
+        {
             return true;
         }
     }
@@ -58,12 +58,8 @@ fn test_grant_consent_emits_detailed_event() {
         &duration_seconds,
     );
 
-    let expected_topics: Vec<Val> = (
-        symbol_short!("CST_GRT"),
-        patient.clone(),
-        doctor.clone(),
-    )
-        .into_val(&ctx.env);
+    let expected_topics: Vec<Val> =
+        (symbol_short!("CST_GRT"), patient.clone(), doctor.clone()).into_val(&ctx.env);
 
     let expected_data = ConsentGrantedEvent {
         patient: patient.clone(),
@@ -91,12 +87,8 @@ fn test_revoke_consent_emits_detailed_event() {
     ctx.env.ledger().set_timestamp(start_time);
 
     // First grant consent
-    ctx.client.grant_consent(
-        &patient,
-        &doctor,
-        &ConsentType::Research,
-        &7200,
-    );
+    ctx.client
+        .grant_consent(&patient, &doctor, &ConsentType::Research, &7200);
 
     let revoke_time = start_time + 1000;
     ctx.env.ledger().set_timestamp(revoke_time);
@@ -104,12 +96,8 @@ fn test_revoke_consent_emits_detailed_event() {
     // Revoke consent
     ctx.client.revoke_consent(&patient, &doctor);
 
-    let expected_topics: Vec<Val> = (
-        symbol_short!("CST_REV"),
-        patient.clone(),
-        doctor.clone(),
-    )
-        .into_val(&ctx.env);
+    let expected_topics: Vec<Val> =
+        (symbol_short!("CST_REV"), patient.clone(), doctor.clone()).into_val(&ctx.env);
 
     let expected_data = ConsentRevokedEvent {
         patient: patient.clone(),
@@ -134,31 +122,19 @@ fn test_update_consent_emits_both_update_and_grant_events() {
     ctx.env.ledger().set_timestamp(t1);
 
     // Initial grant: 3600 seconds
-    ctx.client.grant_consent(
-        &patient,
-        &doctor,
-        &ConsentType::Sharing,
-        &3600,
-    );
+    ctx.client
+        .grant_consent(&patient, &doctor, &ConsentType::Sharing, &3600);
 
     let t2 = t1 + 1800;
     ctx.env.ledger().set_timestamp(t2);
 
     // Update grant: extend for 7200 seconds
-    ctx.client.grant_consent(
-        &patient,
-        &doctor,
-        &ConsentType::Sharing,
-        &7200,
-    );
+    ctx.client
+        .grant_consent(&patient, &doctor, &ConsentType::Sharing, &7200);
 
     // Check CST_UPD event
-    let expected_update_topics: Vec<Val> = (
-        symbol_short!("CST_UPD"),
-        patient.clone(),
-        doctor.clone(),
-    )
-        .into_val(&ctx.env);
+    let expected_update_topics: Vec<Val> =
+        (symbol_short!("CST_UPD"), patient.clone(), doctor.clone()).into_val(&ctx.env);
 
     let expected_update_data = ConsentUpdatedEvent {
         patient: patient.clone(),
@@ -175,12 +151,8 @@ fn test_update_consent_emits_both_update_and_grant_events() {
     );
 
     // Check new CST_GRT event
-    let expected_grant_topics: Vec<Val> = (
-        symbol_short!("CST_GRT"),
-        patient.clone(),
-        doctor.clone(),
-    )
-        .into_val(&ctx.env);
+    let expected_grant_topics: Vec<Val> =
+        (symbol_short!("CST_GRT"), patient.clone(), doctor.clone()).into_val(&ctx.env);
 
     let expected_grant_data = ConsentGrantedEvent {
         patient: patient.clone(),
@@ -204,12 +176,9 @@ fn test_grant_consent_zero_duration_rejected() {
     let patient = Address::generate(&ctx.env);
     let doctor = Address::generate(&ctx.env);
 
-    let res = ctx.client.try_grant_consent(
-        &patient,
-        &doctor,
-        &ConsentType::Treatment,
-        &0,
-    );
+    let res = ctx
+        .client
+        .try_grant_consent(&patient, &doctor, &ConsentType::Treatment, &0);
 
     assert!(res.is_err());
     let err = res.unwrap_err();

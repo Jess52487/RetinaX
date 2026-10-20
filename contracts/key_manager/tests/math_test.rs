@@ -1,95 +1,61 @@
-#![cfg(test)]
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use key_manager::{
-    ContractError, KeyLevel, KeyManagerContract, KeyManagerContractClient, KeyPolicy, KeyType,
-};
-use soroban_sdk::{symbol_short, testutils::Address as _, Address, BytesN, Env, Vec};
+use key_manager::{KeyManagerContract, KeyManagerContractClient, KeyPolicy, KeyType};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, Vec};
 
-fn setup_env() -> Env {
+fn setup() -> (Env, KeyManagerContractClient<'static>, Address) {
     let env = Env::default();
     env.mock_all_auths();
-    env
+
+    let contract_id = env.register(KeyManagerContract, ());
+    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    let identity = Address::generate(&env);
+    client.initialize(&admin, &identity);
+
+    (env, client, admin)
+}
+
+fn create_master_key(env: &Env, client: &KeyManagerContractClient, admin: &Address) -> BytesN<32> {
+    let policy = KeyPolicy {
+        max_uses: 0,
+        not_before: 0,
+        not_after: 0,
+        allowed_ops: Vec::new(env),
+    };
+    let key_bytes = BytesN::from_array(env, &[1; 32]);
+    client.create_master_key(admin, &KeyType::Encryption, &policy, &0, &key_bytes)
 }
 
 #[test]
-fn test_u64_overflow_protection() {
-    let env = setup_env();
+fn test_record_key_derivation_is_deterministic() {
+    let (env, client, admin) = setup();
+    let key_id = create_master_key(&env, &client, &admin);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let first = client.derive_record_key(&key_id, &42);
+    let repeated = client.derive_record_key(&key_id, &42);
 
-    let max_value: u64 = u64::MAX;
-
-    // Example: storing or incrementing a max value
-    let result = client.set_quota(&max_value);
-
-    // Now attempt operation that would overflow
-    let overflow_attempt = client.increment_quota(&1);
-
-    // Expect error instead of wraparound
-    assert_eq!(overflow_attempt.is_err(), true);
+    assert_eq!(first.key, repeated.key);
+    assert_eq!(first.version, repeated.version);
 }
 
 #[test]
-fn test_u64_underflow_protection() {
-    let env = setup_env();
+fn test_record_key_derivation_is_scoped_to_record() {
+    let (env, client, admin) = setup();
+    let key_id = create_master_key(&env, &client, &admin);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let first = client.derive_record_key(&key_id, &42);
+    let second = client.derive_record_key(&key_id, &43);
 
-    let zero: u64 = 0;
-
-    client.set_quota(&zero);
-
-    // Attempt decrement below zero
-    let result = client.decrement_quota(&1);
-
-    assert_eq!(result.is_err(), true);
+    assert_ne!(first.key, second.key);
 }
 
 #[test]
-fn test_i128_overflow_protection() {
-    let env = setup_env();
+fn test_record_key_rejects_unknown_version() {
+    let (env, client, admin) = setup();
+    let key_id = create_master_key(&env, &client, &admin);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let result = client.try_derive_record_key_with_version(&key_id, &42, &2);
 
-    let max_value: i128 = i128::MAX;
-
-    client.set_balance(&max_value);
-
-    // Attempt overflow
-    let result = client.add_balance(&1);
-
-    assert_eq!(result.is_err(), true);
-}
-
-#[test]
-fn test_i128_underflow_protection() {
-    let env = setup_env();
-
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
-
-    let min_value: i128 = i128::MIN;
-
-    client.set_balance(&min_value);
-
-    // Attempt underflow
-    let result = client.sub_balance(&1);
-
-    assert_eq!(result.is_err(), true);
-}
-
-#[test]
-fn test_boundary_exact_values() {
-    let env = setup_env();
-
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
-
-    // Ensure contract accepts max safely WITHOUT computation
-    let result = client.set_quota(&u64::MAX);
-
-    assert_eq!(result.is_ok(), true);
+    assert!(result.is_err());
 }

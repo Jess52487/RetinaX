@@ -9,7 +9,6 @@ use soroban_sdk::{
 use zk_verifier::offchain::{build_offchain_verification_message, OffChainVerificationPayload};
 use zk_verifier::{ContractError, ZkVerifierContract, ZkVerifierContractClient};
 
-
 fn nonzero32(env: &Env, val: u8) -> BytesN<32> {
     let mut b = [0u8; 32];
     b[0] = val;

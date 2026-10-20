@@ -11,15 +11,9 @@
 extern crate std;
 
 use identity::{IdentityContract, IdentityContractClient};
-use key_manager::{
-    KeyLevel, KeyManagerContract, KeyManagerContractClient, KeyPolicy, KeyType,
-};
-use soroban_sdk::{
-    testutils::Address as _, Address, BytesN, Env, String, Vec,
-};
-use vision_records::{
-    AccessLevel, RecordType, VisionRecordsContract, VisionRecordsContractClient,
-};
+use key_manager::{KeyLevel, KeyManagerContract, KeyManagerContractClient, KeyPolicy, KeyType};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, String, Vec};
+use vision_records::{AccessLevel, RecordType, VisionRecordsContract, VisionRecordsContractClient};
 
 #[test]
 fn test_e2e_cross_contract_patient_record_lifecycle() {
@@ -66,13 +60,8 @@ fn test_e2e_cross_contract_patient_record_lifecycle() {
         allowed_ops: Vec::new(&env),
     };
     let raw_key = BytesN::from_array(&env, &[10u8; 32]);
-    let master_key_id = key_manager_client.create_master_key(
-        &admin,
-        &KeyType::Encryption,
-        &policy,
-        &0,
-        &raw_key,
-    );
+    let master_key_id =
+        key_manager_client.create_master_key(&admin, &KeyType::Encryption, &policy, &0, &raw_key);
 
     // Derive a contract level key for the record encryption flow
     let child_key_id = key_manager_client.derive_key(
@@ -85,7 +74,10 @@ fn test_e2e_cross_contract_patient_record_lifecycle() {
         &policy,
         &0,
     );
-    assert_ne!(child_key_id, master_key_id, "Child key ID must be distinct from master key ID");
+    assert_ne!(
+        child_key_id, master_key_id,
+        "Child key ID must be distinct from master key ID"
+    );
 
     // 4. Vision Records Contract: Initialize & Register Patient Record Lifecycle
     vision_client.initialize(&admin);

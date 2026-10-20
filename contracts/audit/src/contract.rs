@@ -50,6 +50,7 @@ const ADMIN: Symbol = symbol_short!("ADMIN");
 const SEGMENTS: Symbol = symbol_short!("SEGMENTS");
 
 #[contractimpl]
+#[allow(clippy::too_many_arguments)]
 impl AuditContract {
     /// Initialize the contract with an admin address.
     ///

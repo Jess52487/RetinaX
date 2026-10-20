@@ -631,12 +631,7 @@ pub fn publish_consent_granted(
 }
 
 /// Publishes a detailed event when consent is revoked.
-pub fn publish_consent_revoked(
-    env: &Env,
-    patient: Address,
-    grantee: Address,
-    revoked_at: u64,
-) {
+pub fn publish_consent_revoked(env: &Env, patient: Address, grantee: Address, revoked_at: u64) {
     let topics = (symbol_short!("CST_REV"), patient.clone(), grantee.clone());
     let data = ConsentRevokedEvent {
         patient,

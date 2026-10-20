@@ -243,12 +243,7 @@ pub fn grant_emergency_access(
     // Emit Soroban events for notified contacts
     for i in 0..notified_contacts.len() {
         if let Some(contact) = notified_contacts.get(i) {
-            events::publish_emergency_contact_notified(
-                env,
-                access_id,
-                patient.clone(),
-                contact,
-            );
+            events::publish_emergency_contact_notified(env, access_id, patient.clone(), contact);
         }
     }
 

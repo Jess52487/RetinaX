@@ -1,99 +1,69 @@
-#![cfg(test)]
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use crate::KeyManagerContract;
-use soroban_sdk::{testutils::Address as _, Address, Env, Vec}; // adjust path if needed
+use key_manager::{KeyManagerContract, KeyManagerContractClient, KeyPolicy, KeyType};
+use soroban_sdk::{testutils::Address as _, Address, BytesN, Env, Vec};
 
-fn setup_env() -> Env {
+fn setup() -> (Env, KeyManagerContractClient<'static>, Address) {
     let env = Env::default();
     env.mock_all_auths();
-    env
+
+    let contract_id = env.register(KeyManagerContract, ());
+    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    let identity = Address::generate(&env);
+    client.initialize(&admin, &identity);
+
+    (env, client, admin)
+}
+
+fn policy(env: &Env, not_before: u64, not_after: u64) -> KeyPolicy {
+    KeyPolicy {
+        max_uses: 0,
+        not_before,
+        not_after,
+        allowed_ops: Vec::new(env),
+    }
 }
 
 #[test]
-fn test_zero_expiry_rejected() {
-    let env = setup_env();
+fn test_create_master_key_rejects_inverted_policy_window() {
+    let (env, client, admin) = setup();
+    let key_bytes = BytesN::from_array(&env, &[1; 32]);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let result = client.try_create_master_key(
+        &admin,
+        &KeyType::Encryption,
+        &policy(&env, 100, 50),
+        &0,
+        &key_bytes,
+    );
 
-    let zero_expiry: u64 = 0;
-
-    let result = client.create_key(&zero_expiry);
-
-    assert_eq!(result.is_err(), true);
+    assert!(result.is_err());
 }
 
 #[test]
-fn test_zero_quota_rejected() {
-    let env = setup_env();
+fn test_non_admin_cannot_create_master_key() {
+    let (env, client, _) = setup();
+    let caller = Address::generate(&env);
+    let key_bytes = BytesN::from_array(&env, &[2; 32]);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let result = client.try_create_master_key(
+        &caller,
+        &KeyType::Encryption,
+        &policy(&env, 0, 0),
+        &0,
+        &key_bytes,
+    );
 
-    let zero: u64 = 0;
-
-    let result = client.set_quota(&zero);
-
-    assert_eq!(result.is_err(), true);
+    assert!(result.is_err());
 }
 
 #[test]
-fn test_empty_vector_rejected() {
-    let env = setup_env();
+fn test_use_key_rejects_unknown_key() {
+    let (env, client, admin) = setup();
+    let unknown_key_id = BytesN::from_array(&env, &[0; 32]);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let result = client.try_use_key(&admin, &unknown_key_id, &soroban_sdk::symbol_short!("ENC"));
 
-    let empty_vec: Vec<u64> = Vec::new(&env);
-
-    // Example: function that expects non-empty list
-    let result = client.batch_create_keys(&empty_vec);
-
-    assert_eq!(result.is_err(), true);
-}
-
-#[test]
-fn test_invalid_address_rejected() {
-    let env = setup_env();
-
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
-
-    // Generate address but simulate invalid usage scenario
-    let addr = Address::generate(&env);
-
-    // Example: passing address where additional validation should fail
-    let result = client.assign_key(&addr, &0u64);
-
-    assert_eq!(result.is_err(), true);
-}
-
-#[test]
-fn test_zero_key_id_usage_fails() {
-    let env = setup_env();
-
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
-
-    let invalid_key_id: u64 = 0;
-
-    let result = client.use_key(&invalid_key_id);
-
-    assert_eq!(result.is_err(), true);
-}
-
-#[test]
-fn test_empty_state_no_side_effects() {
-    let env = setup_env();
-
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
-
-    let invalid_key_id: u64 = 0;
-
-    let _ = client.use_key(&invalid_key_id);
-
-    // Ensure no events emitted for invalid input
-    let events = env.events().all();
-    assert_eq!(events.len(), 0);
+    assert!(result.is_err());
 }

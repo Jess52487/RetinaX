@@ -75,6 +75,7 @@ trait MetricSourceInterface {
 pub struct AnalyticsContract;
 
 #[contractimpl]
+#[allow(clippy::too_many_arguments)]
 impl AnalyticsContract {
     pub fn initialize(
         env: Env,

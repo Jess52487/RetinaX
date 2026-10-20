@@ -24,9 +24,7 @@
 
 #![cfg(test)]
 
-use soroban_sdk::{
-    contracttype, testutils::Address as _, Address, BytesN, Env, Vec,
-};
+use soroban_sdk::{contracttype, testutils::Address as _, Address, BytesN, Env, Vec};
 use zk_verifier::{
     vk::{G1Point, G2Point},
     ContractError, ExtensibleProof, Proof, ProofSystemId, ProofValidationError,
@@ -113,7 +111,10 @@ fn test_valid_proof_system_identifiers() {
         ProofSystemId::PlonkBn254
     );
     assert_eq!(ProofSystemId::from_u32(3).unwrap(), ProofSystemId::StarkFri);
-    assert_eq!(ProofSystemId::from_u32(4).unwrap(), ProofSystemId::LatticeZk);
+    assert_eq!(
+        ProofSystemId::from_u32(4).unwrap(),
+        ProofSystemId::LatticeZk
+    );
 }
 
 #[test]

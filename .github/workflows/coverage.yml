@@ -30,6 +30,7 @@ jobs:
 
       - name: Run coverage
         run: |
+          mkdir -p coverage
           cargo tarpaulin \
             --workspace \
             --out xml \

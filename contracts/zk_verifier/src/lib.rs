@@ -36,8 +36,8 @@ pub use crate::offchain::{
 };
 pub use crate::plonk::PlonkVerifier;
 pub use crate::verifier::{
-    Bn254Verifier, ExtensibleProof, PoseidonHasher, Proof, ProofSystemId,
-    ProofValidationError, ZkVerifier,
+    Bn254Verifier, ExtensibleProof, PoseidonHasher, Proof, ProofSystemId, ProofValidationError,
+    ZkVerifier,
 };
 pub use crate::vk::{G1Point, G2Point, VerificationKey};
 

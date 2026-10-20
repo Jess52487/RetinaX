@@ -14,8 +14,8 @@ use soroban_sdk::{
     Address, Env, String, Symbol, Vec,
 };
 use treasury::{
-    AllocationSummary, ContractError, Proposal, ProposalKind, ProposalStatus,
-    SwapProposal, TransferProposal, TreasuryConfig, TreasuryContract, TreasuryContractClient,
+    AllocationSummary, ContractError, Proposal, ProposalKind, ProposalStatus, SwapProposal,
+    TransferProposal, TreasuryConfig, TreasuryContract, TreasuryContractClient,
 };
 
 #[contract]
@@ -156,17 +156,24 @@ fn test_admin_functions_authorization() {
         ctx.client.try_set_dex_router(&unauthorized, &ctx.router),
         Err(Ok(ContractError::UnauthorisedAdmin))
     );
-    assert!(ctx.client.try_set_dex_router(&ctx.admin, &ctx.router).is_ok());
+    assert!(ctx
+        .client
+        .try_set_dex_router(&ctx.admin, &ctx.router)
+        .is_ok());
 
     let cfg: TreasuryConfig = ctx.client.get_config();
     assert_eq!(cfg.dex_router, Some(ctx.router));
 
     // Asset Limits
     assert_eq!(
-        ctx.client.try_set_asset_limit(&unauthorized, &ctx.token1, &50_000i128),
+        ctx.client
+            .try_set_asset_limit(&unauthorized, &ctx.token1, &50_000i128),
         Err(Ok(ContractError::UnauthorisedAdmin))
     );
-    assert!(ctx.client.try_set_asset_limit(&ctx.admin, &ctx.token1, &50_000i128).is_ok());
+    assert!(ctx
+        .client
+        .try_set_asset_limit(&ctx.admin, &ctx.token1, &50_000i128)
+        .is_ok());
     assert_eq!(ctx.client.get_limit(&ctx.token1), 50_000i128);
     // Unset asset returns i128::MAX
     assert_eq!(ctx.client.get_limit(&ctx.token2), i128::MAX);
@@ -200,26 +207,33 @@ fn test_governor_spend_lifecycle_and_balance_invariants() {
     // Unauthorized caller cannot spend
     let impostor = Address::generate(&ctx.env);
     assert_eq!(
-        ctx.client.try_governor_spend(&impostor, &ctx.token1, &recipient, &spend_amount),
+        ctx.client
+            .try_governor_spend(&impostor, &ctx.token1, &recipient, &spend_amount),
         Err(Ok(ContractError::NotAuthorizedCaller))
     );
 
     // Zero / negative amount rejected
     assert_eq!(
-        ctx.client.try_governor_spend(&governor, &ctx.token1, &recipient, &0i128),
+        ctx.client
+            .try_governor_spend(&governor, &ctx.token1, &recipient, &0i128),
         Err(Ok(ContractError::PositiveAmountRequired))
     );
 
     // Governor spend exceeds limit
-    ctx.client.set_asset_limit(&ctx.admin, &ctx.token1, &10_000i128);
+    ctx.client
+        .set_asset_limit(&ctx.admin, &ctx.token1, &10_000i128);
     assert_eq!(
-        ctx.client.try_governor_spend(&governor, &ctx.token1, &recipient, &spend_amount),
+        ctx.client
+            .try_governor_spend(&governor, &ctx.token1, &recipient, &spend_amount),
         Err(Ok(ContractError::LimitExceeded))
     );
 
     // Reset limit and execute valid spend
-    ctx.client.set_asset_limit(&ctx.admin, &ctx.token1, &100_000i128);
-    let spend_res = ctx.client.try_governor_spend(&governor, &ctx.token1, &recipient, &spend_amount);
+    ctx.client
+        .set_asset_limit(&ctx.admin, &ctx.token1, &100_000i128);
+    let spend_res =
+        ctx.client
+            .try_governor_spend(&governor, &ctx.token1, &recipient, &spend_amount);
     assert!(spend_res.is_ok());
 
     // Balance invariant: initial = spent + remaining
@@ -274,13 +288,19 @@ fn test_transfer_proposal_full_multisig_lifecycle() {
     );
 
     // 2. Second signer approves
-    assert!(ctx.client.try_approve_proposal(&second_signer, &proposal.id).is_ok());
+    assert!(ctx
+        .client
+        .try_approve_proposal(&second_signer, &proposal.id)
+        .is_ok());
 
     let approved_prop = ctx.client.get_proposal(&proposal.id).unwrap();
     assert_eq!(approved_prop.approvals.len(), 2);
 
     // 3. Execute proposal
-    assert!(ctx.client.try_execute_proposal(&second_signer, &proposal.id).is_ok());
+    assert!(ctx
+        .client
+        .try_execute_proposal(&second_signer, &proposal.id)
+        .is_ok());
 
     let executed_prop = ctx.client.get_proposal(&proposal.id).unwrap();
     assert_eq!(executed_prop.status, ProposalStatus::Executed);
@@ -292,12 +312,15 @@ fn test_transfer_proposal_full_multisig_lifecycle() {
     assert_eq!(initial_balance, remaining + recipient_balance);
 
     // Allocation tracking for category
-    let alloc = ctx.client.get_allocation_for_category(&ctx.token1, &category);
+    let alloc = ctx
+        .client
+        .get_allocation_for_category(&ctx.token1, &category);
     assert_eq!(alloc.total_spent, amount);
 
     // Executing already executed proposal fails
     assert_eq!(
-        ctx.client.try_execute_proposal(&second_signer, &proposal.id),
+        ctx.client
+            .try_execute_proposal(&second_signer, &proposal.id),
         Err(Ok(ContractError::ProposalNotPending))
     );
 }
@@ -356,7 +379,8 @@ fn test_transfer_proposal_authorization_and_validation() {
     );
 
     // Amount exceeding asset limit
-    ctx.client.set_asset_limit(&ctx.admin, &ctx.token1, &500i128);
+    ctx.client
+        .set_asset_limit(&ctx.admin, &ctx.token1, &500i128);
     assert_eq!(
         ctx.client.try_create_transfer_proposal(
             &ctx.signers[0],
@@ -395,13 +419,15 @@ fn test_proposal_expiration() {
 
     // Approval after expiry fails and marks proposal expired
     assert_eq!(
-        ctx.client.try_approve_proposal(&ctx.signers[1], &proposal.id),
+        ctx.client
+            .try_approve_proposal(&ctx.signers[1], &proposal.id),
         Err(Ok(ContractError::ProposalExpired))
     );
 
     // Execution after expiry fails
     assert_eq!(
-        ctx.client.try_execute_proposal(&ctx.signers[0], &proposal.id),
+        ctx.client
+            .try_execute_proposal(&ctx.signers[0], &proposal.id),
         Err(Ok(ContractError::ProposalExpired))
     );
 
@@ -453,7 +479,9 @@ fn test_swap_proposal_lifecycle() {
 
     // Approve & execute
     ctx.client.approve_proposal(&ctx.signers[1], &proposal.id);
-    let exec_res = ctx.client.try_execute_proposal(&ctx.signers[0], &proposal.id);
+    let exec_res = ctx
+        .client
+        .try_execute_proposal(&ctx.signers[0], &proposal.id);
     assert!(exec_res.is_ok());
 
     let executed = ctx.client.get_proposal(&proposal.id).unwrap();

@@ -285,7 +285,6 @@ pub struct PaginatedRecordIds {
     pub total: u32,
 }
 
-
 /// Access grant structure
 #[contracttype]
 #[derive(Clone, Debug)]
@@ -549,7 +548,9 @@ impl VisionRecordsContract {
                 "current_admin",
             );
         }
-        env.storage().instance().set(&symbol_short!("CLIN_REC"), &clinical_records);
+        env.storage()
+            .instance()
+            .set(&symbol_short!("CLIN_REC"), &clinical_records);
         Ok(())
     }
 
@@ -1604,10 +1605,7 @@ impl VisionRecordsContract {
             }
         }
 
-        PaginatedRecordIds {
-            ids: page,
-            total,
-        }
+        PaginatedRecordIds { ids: page, total }
     }
 
     /// Grant access to a user
@@ -2710,7 +2708,8 @@ impl VisionRecordsContract {
         prescription_data: prescription::PrescriptionData,
     ) -> Result<u64, ContractError> {
         if let Some(clinical_records) = Self::get_clinical_records_contract(env.clone()) {
-            let client = clinical_records::ClinicalRecordsContractClient::new(&env, &clinical_records);
+            let client =
+                clinical_records::ClinicalRecordsContractClient::new(&env, &clinical_records);
             let contract_caller = env.current_contract_address();
             let clinical_data = clinical_records::PrescriptionData {
                 sphere: prescription_data.sphere.clone(),
@@ -2719,7 +2718,12 @@ impl VisionRecordsContract {
                 add: prescription_data.add.clone(),
                 pd: prescription_data.pd.clone(),
             };
-            return Ok(client.prepare_add_prescription(&contract_caller, &patient, &provider, &clinical_data));
+            return Ok(client.prepare_add_prescription(
+                &contract_caller,
+                &patient,
+                &provider,
+                &clinical_data,
+            ));
         }
 
         // Validate without state changes
@@ -2765,7 +2769,8 @@ impl VisionRecordsContract {
     /// Commit phase for adding a prescription
     pub fn commit_add_prescription(env: Env, rx_id: u64) -> Result<(), ContractError> {
         if let Some(clinical_records) = Self::get_clinical_records_contract(env.clone()) {
-            let client = clinical_records::ClinicalRecordsContractClient::new(&env, &clinical_records);
+            let client =
+                clinical_records::ClinicalRecordsContractClient::new(&env, &clinical_records);
             let contract_caller = env.current_contract_address();
             return Ok(client.commit_add_prescription(&contract_caller, &rx_id));
         }
@@ -2965,7 +2970,6 @@ impl VisionRecordsContract {
             total: total_count,
         })
     }
-
 
     // ── Admin tier management ─────────────────────────────────────────────────
 

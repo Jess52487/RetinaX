@@ -1,133 +1,93 @@
-#![cfg(test)]
+#![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use key_manager::{
-    ContractError, KeyLevel, KeyManagerContract, KeyManagerContractClient, KeyPolicy, KeyType,
-};
+extern crate std;
+
+use key_manager::{KeyManagerContract, KeyManagerContractClient, KeyPolicy, KeyType};
 use soroban_sdk::{
     symbol_short,
-    testutils::{Address as _, Events},
-    Address, BytesN, Env, Vec,
+    testutils::{Address as _, Events as _},
+    xdr::{ContractEventBody, ScVal},
+    Address, Env, IntoVal, TryFromVal, Val, Vec,
 };
 
-fn setup_env() -> Env {
+fn setup() -> (Env, KeyManagerContractClient<'static>, Address) {
     let env = Env::default();
     env.mock_all_auths();
-    env
+
+    let contract_id = env.register(KeyManagerContract, ());
+    let client = KeyManagerContractClient::new(&env, &contract_id);
+    let admin = Address::generate(&env);
+    let identity = Address::generate(&env);
+    client.initialize(&admin, &identity);
+
+    (env, client, admin)
+}
+
+fn create_master_key(
+    env: &Env,
+    client: &KeyManagerContractClient,
+    admin: &Address,
+) -> soroban_sdk::BytesN<32> {
+    let policy = KeyPolicy {
+        max_uses: 0,
+        not_before: 0,
+        not_after: 0,
+        allowed_ops: Vec::new(env),
+    };
+    let key_bytes = soroban_sdk::BytesN::from_array(env, &[7; 32]);
+    client.create_master_key(admin, &KeyType::Encryption, &policy, &0, &key_bytes)
+}
+
+fn assert_audit_event(env: &Env, seq: u64) {
+    let emitted = env.events().all();
+    let events = emitted.events();
+    assert_eq!(events.len(), 1, "expected one audit event");
+
+    let ContractEventBody::V0(body) = &events.last().unwrap().body;
+    let topics: Vec<Val> = (symbol_short!("AUDIT"), seq).into_val(env);
+    let expected_topics = topics
+        .iter()
+        .map(|topic| ScVal::try_from_val(env, &topic).unwrap())
+        .collect::<std::vec::Vec<_>>();
+    assert_eq!(body.topics.as_slice(), expected_topics.as_slice());
 }
 
 #[test]
-fn test_key_creation_emits_event() {
-    let env = setup_env();
+fn test_create_master_key_emits_audit_event() {
+    let (env, client, admin) = setup();
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    create_master_key(&env, &client, &admin);
 
-    let expiry: u64 = 1000;
-
-    // Perform action
-    let key_id = client.create_key(&expiry);
-
-    // Fetch emitted events
-    let events = env.events().all();
-
-    // Ensure at least one event was emitted
-    assert_eq!(events.len() > 0, true);
-
-    // Inspect the last event (most recent)
-    let last_event = events.last().unwrap();
-
-    // Example expected structure:
-    // topics: ["key_created", key_id]
-    // data: expiry
-
-    assert_eq!(last_event.topics.len(), 2);
-
-    // Match event name
-    assert_eq!(
-        last_event.topics.get(0).unwrap().to_symbol().unwrap(),
-        "key_created"
-    );
-
-    // Match key_id in topics (if applicable)
-    assert_eq!(last_event.topics.get(1).unwrap(), key_id.into_val(&env));
-
-    // Match payload
-    assert_eq!(last_event.data, expiry.into_val(&env));
+    assert_audit_event(&env, 1);
 }
 
 #[test]
-fn test_key_usage_emits_event() {
-    let env = setup_env();
+fn test_use_key_emits_audit_event() {
+    let (env, client, admin) = setup();
+    let key_id = create_master_key(&env, &client, &admin);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    client.use_key(&admin, &key_id, &symbol_short!("ENC"));
 
-    let expiry = 2000;
-    let key_id = client.create_key(&expiry);
-
-    // Clear previous events if needed
-    env.events().clear();
-
-    // Use key
-    client.use_key(&key_id);
-
-    let events = env.events().all();
-    assert_eq!(events.len(), 1);
-
-    let event = events.first().unwrap();
-
-    assert_eq!(
-        event.topics.get(0).unwrap().to_symbol().unwrap(),
-        "key_used"
-    );
-    assert_eq!(event.topics.get(1).unwrap(), key_id.into_val(&env));
+    assert_audit_event(&env, 2);
 }
 
 #[test]
-fn test_key_revocation_emits_event() {
-    let env = setup_env();
+fn test_revoke_key_emits_audit_event() {
+    let (env, client, admin) = setup();
+    let key_id = create_master_key(&env, &client, &admin);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
+    client.revoke_key(&admin, &key_id);
 
-    let expiry = 3000;
-    let key_id = client.create_key(&expiry);
-
-    env.events().clear();
-
-    // Revoke key
-    client.revoke_key(&key_id);
-
-    let events = env.events().all();
-    assert_eq!(events.len(), 1);
-
-    let event = events.first().unwrap();
-
-    assert_eq!(
-        event.topics.get(0).unwrap().to_symbol().unwrap(),
-        "key_revoked"
-    );
-    assert_eq!(event.topics.get(1).unwrap(), key_id.into_val(&env));
+    assert_audit_event(&env, 2);
 }
 
 #[test]
-fn test_no_event_on_failed_operation() {
-    let env = setup_env();
+fn test_failed_key_use_does_not_emit_audit_event() {
+    let (env, client, admin) = setup();
+    let missing_key_id = soroban_sdk::BytesN::from_array(&env, &[0; 32]);
 
-    let contract_id = env.register_contract(None, KeyManagerContract);
-    let client = KeyManagerContractClient::new(&env, &contract_id);
-
-    let fake_key_id = 999u64;
-
-    env.events().clear();
-
-    // Attempt invalid operation
-    let result = client.use_key(&fake_key_id);
-
-    assert_eq!(result.is_err(), true);
-
-    let events = env.events().all();
-
-    // Ensure no event emitted on failure
-    assert_eq!(events.len(), 0);
+    assert!(client
+        .try_use_key(&admin, &missing_key_id, &symbol_short!("ENC"))
+        .is_err());
+    assert!(env.events().all().events().is_empty());
 }

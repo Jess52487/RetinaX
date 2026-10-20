@@ -17,8 +17,7 @@
 extern crate std;
 
 use access_control::{
-    AccessControlContract, AccessControlContractClient, Permission as AcPermission,
-    Role as AcRole,
+    AccessControlContract, AccessControlContractClient, Permission as AcPermission, Role as AcRole,
 };
 use soroban_sdk::{
     testutils::{Address as _, Ledger as _},
@@ -140,12 +139,8 @@ fn test_cross_contract_role_assignment_and_verification() {
 
     // Assign Ophthalmologist role in AccessControl
     let expires_at = f.env.ledger().timestamp() + 86400;
-    f.ac_client.assign_role(
-        &f.admin,
-        &doctor,
-        &AcRole::Ophthalmologist,
-        &expires_at,
-    );
+    f.ac_client
+        .assign_role(&f.admin, &doctor, &AcRole::Ophthalmologist, &expires_at);
 
     assert_eq!(f.ac_client.get_role(&doctor), AcRole::Ophthalmologist);
 
@@ -183,12 +178,8 @@ fn test_cross_contract_role_revocation() {
     let doctor = Address::generate(&f.env);
 
     let expires_at = f.env.ledger().timestamp() + 86400;
-    f.ac_client.assign_role(
-        &f.admin,
-        &doctor,
-        &AcRole::Optometrist,
-        &expires_at,
-    );
+    f.ac_client
+        .assign_role(&f.admin, &doctor, &AcRole::Optometrist, &expires_at);
 
     // Verify granted
     assert!(f
@@ -223,47 +214,30 @@ fn test_cross_contract_permission_delegation() {
     let expires_at = f.env.ledger().timestamp() + 3600;
 
     // Assign doctor role
-    f.ac_client.assign_role(
-        &f.admin,
-        &doctor,
-        &AcRole::Ophthalmologist,
-        &expires_at,
-    );
+    f.ac_client
+        .assign_role(&f.admin, &doctor, &AcRole::Ophthalmologist, &expires_at);
 
     // Doctor delegates complete Optometrist role to assistant
-    f.ac_client.delegate_role(
-        &doctor,
-        &assistant,
-        &AcRole::Optometrist,
-        &expires_at,
-    );
+    f.ac_client
+        .delegate_role(&doctor, &assistant, &AcRole::Optometrist, &expires_at);
 
     // Assistant now holds delegated permissions
     assert!(
-        f.ac_client.has_delegated_permission(
-            &doctor,
-            &assistant,
-            &AcPermission::ReadAnyRecord
-        ),
+        f.ac_client
+            .has_delegated_permission(&doctor, &assistant, &AcPermission::ReadAnyRecord),
         "Assistant should hold delegated ReadAnyRecord"
     );
     assert!(
-        f.ac_client.has_delegated_permission(
-            &doctor,
-            &assistant,
-            &AcPermission::WriteRecord
-        ),
+        f.ac_client
+            .has_delegated_permission(&doctor, &assistant, &AcPermission::WriteRecord),
         "Assistant should hold delegated WriteRecord"
     );
 
     // Revoke role delegation
     f.ac_client.revoke_delegation(&doctor, &assistant);
     assert!(
-        !f.ac_client.has_delegated_permission(
-            &doctor,
-            &assistant,
-            &AcPermission::ReadAnyRecord
-        ),
+        !f.ac_client
+            .has_delegated_permission(&doctor, &assistant, &AcPermission::ReadAnyRecord),
         "Delegated permission must be revoked"
     );
 
@@ -271,23 +245,17 @@ fn test_cross_contract_permission_delegation() {
     let mut scoped = Vec::new(&f.env);
     scoped.push_back(AcPermission::ReadAnyRecord);
 
-    f.ac_client.delegate_permissions(
-        &doctor,
-        &assistant,
-        &scoped,
-        &expires_at,
-    );
+    f.ac_client
+        .delegate_permissions(&doctor, &assistant, &scoped, &expires_at);
 
     assert!(f.ac_client.has_delegated_permission(
         &doctor,
         &assistant,
         &AcPermission::ReadAnyRecord
     ));
-    assert!(!f.ac_client.has_delegated_permission(
-        &doctor,
-        &assistant,
-        &AcPermission::WriteRecord
-    ));
+    assert!(!f
+        .ac_client
+        .has_delegated_permission(&doctor, &assistant, &AcPermission::WriteRecord));
 
     // Revoke scoped delegation
     f.ac_client.revoke_scoped_delegation(&doctor, &assistant);
@@ -305,7 +273,8 @@ fn test_permission_cascading_and_custom_permissions() {
     let expires_at = f.env.ledger().timestamp() + 86400;
 
     // Staff role has ManageUsers but not WriteRecord or SystemAdmin
-    f.ac_client.assign_role(&f.admin, &staff, &AcRole::Staff, &expires_at);
+    f.ac_client
+        .assign_role(&f.admin, &staff, &AcRole::Staff, &expires_at);
 
     assert!(f
         .vr_client
@@ -315,11 +284,8 @@ fn test_permission_cascading_and_custom_permissions() {
         .check_permission(&staff, &VrPermission::WriteRecord));
 
     // Admin grants custom permission WriteRecord to staff
-    f.ac_client.grant_custom_permission(
-        &f.admin,
-        &staff,
-        &AcPermission::WriteRecord,
-    );
+    f.ac_client
+        .grant_custom_permission(&f.admin, &staff, &AcPermission::WriteRecord);
 
     // Cascades into VisionRecords permission query
     assert!(
@@ -329,7 +295,8 @@ fn test_permission_cascading_and_custom_permissions() {
     );
 
     // Role upgrade from Staff to Admin cascades all admin permissions
-    f.ac_client.assign_role(&f.admin, &staff, &AcRole::Admin, &expires_at);
+    f.ac_client
+        .assign_role(&f.admin, &staff, &AcRole::Admin, &expires_at);
     assert!(f
         .vr_client
         .check_permission(&staff, &VrPermission::SystemAdmin));
@@ -377,9 +344,9 @@ fn test_emergency_access_override_scenarios() {
     assert_eq!(grant.status, EmergencyStatus::Active);
 
     // Access record via emergency override
-    let access_result = f
-        .vr_client
-        .try_access_record_via_emergency(&provider, &patient, &Some(101));
+    let access_result =
+        f.vr_client
+            .try_access_record_via_emergency(&provider, &patient, &Some(101));
     assert!(access_result.is_ok());
 
     // Verify audit trail entry was recorded

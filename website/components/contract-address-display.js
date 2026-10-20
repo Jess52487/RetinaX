@@ -41,7 +41,11 @@
       this._address = address;
       const copyLabel = t('common.copyContractAddress', 'Copy contract address');
       this.innerHTML =
-        '<button type="button" class="contract-address-display__button skeleton-fade-in" aria-label="Copy contract address" title="Copy contract address">' +
+        '<button type="button" class="contract-address-display__button skeleton-fade-in" aria-label="' +
+        copyLabel +
+        '" title="' +
+        copyLabel +
+        '">' +
         '<span class="contract-address-display__value">' +
         shorten(address, 6, 6) +
         '</span>' +
