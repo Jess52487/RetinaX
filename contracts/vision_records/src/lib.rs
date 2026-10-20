@@ -268,6 +268,23 @@ pub struct VisionRecord {
     pub updated_at: u64,
 }
 
+/// Paginated result containing vision records and total count
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct PaginatedRecords {
+    pub records: Vec<VisionRecord>,
+    pub total: u32,
+}
+
+/// Paginated result containing record IDs and total count
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct PaginatedRecordIds {
+    pub ids: Vec<u64>,
+    pub total: u32,
+}
+
+
 /// Access grant structure
 #[contracttype]
 #[derive(Clone, Debug)]
@@ -1565,6 +1582,33 @@ impl VisionRecordsContract {
             .unwrap_or(Vec::new(&env))
     }
 
+    /// Get paginated record IDs for a patient with total count
+    pub fn get_patient_records_paginated(
+        env: Env,
+        patient: Address,
+        offset: u32,
+        limit: u32,
+    ) -> PaginatedRecordIds {
+        let all_ids = Self::get_patient_records(env.clone(), patient);
+        let total = all_ids.len();
+        let effective_limit = if limit == 0 { 50 } else { limit };
+        let mut page = Vec::new(&env);
+
+        if offset < total {
+            let end = (offset.saturating_add(effective_limit)).min(total);
+            for i in offset..end {
+                if let Some(id) = all_ids.get(i) {
+                    page.push_back(id);
+                }
+            }
+        }
+
+        PaginatedRecordIds {
+            ids: page,
+            total,
+        }
+    }
+
     /// Grant access to a user
     #[allow(clippy::arithmetic_side_effects)]
     pub fn grant_access(
@@ -2780,8 +2824,8 @@ impl VisionRecordsContract {
         env.storage().instance().get(&counter_key).unwrap_or(0)
     }
 
-    /// Get multiple records by their IDs.
-    pub fn get_records(env: Env, ids: Vec<u64>) -> Result<Vec<VisionRecord>, ContractError> {
+    /// Get multiple records by their IDs (unpaginated).
+    pub fn get_records_by_ids(env: Env, ids: Vec<u64>) -> Result<Vec<VisionRecord>, ContractError> {
         let mut records: Vec<VisionRecord> = Vec::new(&env);
         for i in 0..ids.len() {
             let record_id = ids.get(i).unwrap();
@@ -2795,6 +2839,36 @@ impl VisionRecordsContract {
         }
         Ok(records)
     }
+
+    /// Get vision records with offset and limit pagination (default limit: 50).
+    /// Returns PaginatedRecords containing the records and total count.
+    pub fn get_records(
+        env: Env,
+        offset: u32,
+        limit: u32,
+    ) -> Result<PaginatedRecords, ContractError> {
+        let total_count = Self::get_record_count(env.clone()) as u32;
+        let effective_limit = if limit == 0 { 50 } else { limit };
+        let mut records: Vec<VisionRecord> = Vec::new(&env);
+
+        if offset < total_count {
+            let start_id = (offset as u64).saturating_add(1);
+            let end_id = (offset.saturating_add(effective_limit)).min(total_count) as u64;
+
+            for record_id in start_id..=end_id {
+                let key = (symbol_short!("RECORD"), record_id);
+                if let Some(record) = env.storage().persistent().get(&key) {
+                    records.push_back(record);
+                }
+            }
+        }
+
+        Ok(PaginatedRecords {
+            records,
+            total: total_count,
+        })
+    }
+
 
     // ── Admin tier management ─────────────────────────────────────────────────
 

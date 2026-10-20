@@ -2,9 +2,9 @@ name: Rust security audit
 
 on:
   push:
+    branches: ["main"]
     paths: ["Cargo.toml", "Cargo.lock", "deny.toml", ".github/workflows/security-audit.yml"]
   pull_request:
-    paths: ["Cargo.toml", "Cargo.lock", "deny.toml", ".github/workflows/security-audit.yml"]
   schedule:
     - cron: "30 3 * * 1"
 

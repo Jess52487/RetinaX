@@ -57,11 +57,31 @@ function initPageTransitions() {
 /* ==========================================================================
    Theme preference
    ========================================================================== */
+const THEME_STORAGE_KEY = 'retinax-theme';
+
+// Storage can throw (blocked cookies, some private modes), so reads and writes are guarded.
+// A missing or invalid stored value is treated as "no preference chosen".
+function readStoredTheme() {
+  try {
+    const value = window.localStorage && window.localStorage.getItem(THEME_STORAGE_KEY);
+    return value === 'light' || value === 'dark' ? value : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+function writeStoredTheme(theme) {
+  try {
+    if (window.localStorage) window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+  } catch (_) {
+    // The theme still applies to this page view; it just will not be remembered.
+  }
+}
+
 function initThemeToggle() {
   const toggle = document.getElementById('theme-toggle');
   const root = document.documentElement;
-  const storedTheme = window.localStorage && window.localStorage.getItem('retinax-theme');
-  const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const media = window.matchMedia ? window.matchMedia('(prefers-color-scheme: dark)') : null;
   const setTheme = (theme) => {
     root.dataset.theme = theme;
     if (toggle) {
@@ -79,11 +99,23 @@ function initThemeToggle() {
     }
   };
 
-  setTheme(storedTheme || (prefersDark ? 'dark' : 'light'));
+  setTheme(readStoredTheme() || (media && media.matches ? 'dark' : 'light'));
+
+  // Follow OS changes only while the visitor has not chosen a theme themselves.
+  if (media && media.addEventListener) {
+    media.addEventListener('change', (event) => {
+      if (!readStoredTheme()) setTheme(event.matches ? 'dark' : 'light');
+    });
+  }
+
   if (toggle) toggle.addEventListener('click', () => {
     const theme = root.dataset.theme === 'dark' ? 'light' : 'dark';
+    // Animate color changes for a moment so the switch is not jarring. Motion-reduced users get
+    // no transition, enforced in styles.css.
+    root.classList.add('theme-transition');
+    window.setTimeout(() => root.classList.remove('theme-transition'), 300);
     setTheme(theme);
-    if (window.localStorage) window.localStorage.setItem('retinax-theme', theme);
+    writeStoredTheme(theme);
   });
 
   document.addEventListener('retinax:languagechange', () => {

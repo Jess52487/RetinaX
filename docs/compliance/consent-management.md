@@ -1,650 +1,224 @@
 # Consent Management Guide
 
-This document provides comprehensive guidance on the patient consent lifecycle implemented in the RetinaX platform, ensuring HIPAA compliance and patient control over health information.
+This guide explains how patient consent is recorded, checked, revoked, and expired in RetinaX. It describes the code as it exists today, so it covers two implementations:
+
+- **On-chain consent** in the `vision_records` contract (`contracts/vision_records/src/consent_management.rs`, with entry points in `contracts/vision_records/src/lib.rs`). This is the implementation the deployed contract enforces.
+- **`ConsentManager`** in the common crate (`contracts/common/src/consent.rs`). An in-memory model with filtering helpers and ABAC attribute export. No contract calls it today.
 
 ## 🎯 Consent Overview
 
-The RetinaX platform implements a robust consent management system that gives patients granular control over who can access their health information, for what purposes, and for how long. All consent operations are immutably recorded on the blockchain.
+A consent is a grant from a **patient** to a **grantee** (for example a provider or clinic). It lasts for a fixed duration and can be revoked early. A grantee can read a patient's records only while the consent is active.
 
-### Core Principles
+Core rules:
 
-1. **Patient Autonomy** - Patients have ultimate control over their data
-2. **Granular Consent** - Specific permissions for different data types and purposes
-3. **Time-Bound Access** - Consent expires automatically unless renewed
-4. **Revocability** - Patients can revoke consent at any time
-5. **Auditability** - All consent actions are logged and traceable
+1. **Patient authority.** Only the patient can grant or revoke consent. Each call requires the patient's authorization.
+2. **One record per pair.** There is at most one consent record for each (patient, grantee) pair. A new grant replaces the old record.
+3. **Time-bound.** Every grant has an expiry time. Once it passes, the consent stops counting as active.
+4. **Revocable.** A revoked record stays in storage for audit, but it no longer grants access.
 
 ## 📋 Consent Data Structure
 
-### Consent Record
+### Consent Types
 
-**Location**: `contracts/common/src/consent.rs`
+`ConsentType` is defined in `contracts/vision_records/src/consent_management.rs`:
+
+| Variant | Meaning |
+|---------|---------|
+| `Treatment` | Consent for clinical treatment |
+| `Sharing` | Consent to share records with another party |
+| `Research` | Consent for research use |
+| `Emergency` | Emergency consent label |
+| `Billing` | Consent for billing access |
+
+Note that `ConsentType` is stored on the record but is **not** checked by the access logic. Access checks test whether a consent is active, not which type it is. See [ABAC Integration](#-abac-integration).
+
+### On-Chain Consent Record
 
 ```rust
 #[contracttype]
-pub struct Consent {
-    pub consent_id: String,           // Unique consent identifier
-    pub patient_id: Address,          // Patient granting consent
-    pub requester_id: Address,        // Provider/requester receiving consent
-    pub permissions: Vec<String>,     // Specific permissions granted
-    pub data_types: Vec<String>,     // Types of data accessible
-    pub purpose: String,             // Purpose of data access
-    pub granted_at: u64,            // When consent was granted
-    pub expires_at: Option<u64>,     // When consent expires (None = indefinite)
-    pub revoked_at: Option<u64>,     // When consent was revoked (if applicable)
-    pub conditions: Vec<String>,      // Special conditions or limitations
-    pub emergency_override: bool,     // Whether emergency override is permitted
-    pub metadata: String,            // Additional context
+pub struct ConsentGrant {
+    pub patient: Address,
+    pub grantee: Address,
+    pub consent_type: ConsentType,
+    pub granted_at: u64,   // ledger timestamp, seconds
+    pub expires_at: u64,   // ledger timestamp, seconds
+    pub revoked: bool,
 }
 ```
 
-### Permission Types
+The record is stored in persistent storage under the key `(CONSENT, patient, grantee)`. The `consent_key` helper builds this key.
 
-| Permission | Description | Use Case |
-|------------|-------------|-----------|
-| `read_basic` | Read basic patient information | Registration, scheduling |
-| `read_medical` | Read medical history and records | Treatment, consultation |
-| `read_prescriptions` | Read prescription information | Pharmacy, treatment |
-| `write_medical` | Add/update medical records | Provider documentation |
-| `share_research` | Share for research purposes | Research studies |
-| `emergency_access` | Emergency access without consent | Emergency situations |
-| `billing_access` | Access for billing purposes | Insurance, billing |
+### Off-Chain Consent Record (`ConsentManager`)
 
-### Data Types
+```rust
+pub struct ConsentRecord {
+    pub subject: String,        // patient identifier
+    pub grantee: String,        // practitioner or entity identifier
+    pub consent_type: ConsentType,
+    pub granted_at: u64,
+    pub expires_at: Option<u64>, // None means no expiry
+    pub revoked: bool,
+}
+```
 
-| Data Type | Description | Sensitivity Level |
-|------------|-------------|------------------|
-| `demographics` | Name, DOB, contact info | Medium |
-| `medical_history` | Diagnosis, treatments, procedures | High |
-| `prescriptions` | Medication information | High |
-| `test_results` | Lab results, imaging | High |
-| `insurance` | Insurance and billing info | Medium |
-| `emergency_contacts` | Emergency contact information | Medium |
+Identifiers are validated on every call:
+
+| Field | Length (bytes) | Other rules |
+|-------|----------------|-------------|
+| Consent ID | 1 to 64 | Printable characters only, not all whitespace |
+| Subject | 1 to 128 | Printable characters only, not all whitespace |
+| Grantee | 1 to 128 | Printable characters only, not all whitespace |
 
 ## 🔄 Consent Lifecycle
 
-### 1. Consent Grant
-
-**Process Flow**:
 ```
-Patient Login → Select Provider → Specify Permissions → Set Duration → Review Terms → Confirm Consent → Blockchain Record → Provider Notification
-```
-
-**Implementation**:
-```rust
-pub fn grant_consent(
-    env: &Env,
-    patient_id: &Address,
-    requester_id: &Address,
-    permissions: Vec<String>,
-    data_types: Vec<String>,
-    purpose: String,
-    duration_days: Option<u64>,
-    conditions: Vec<String>,
-) -> Result<String, ConsentError> {
-    // Verify patient identity
-    require_patient_authentication(env, patient_id)?;
-    
-    // Validate requester
-    let requester = validate_provider(env, requester_id)?;
-    
-    // Validate permissions and data types
-    validate_permissions(&permissions)?;
-    validate_data_types(&data_types)?;
-    
-    // Create consent record
-    let consent_id = generate_consent_id(env, patient_id, requester_id);
-    let expires_at = duration_days.map(|d| env.ledger().timestamp() + (d * 24 * 60 * 60));
-    
-    let consent = Consent {
-        consent_id: consent_id.clone(),
-        patient_id: patient_id.clone(),
-        requester_id: requester_id.clone(),
-        permissions,
-        data_types,
-        purpose,
-        granted_at: env.ledger().timestamp(),
-        expires_at,
-        revoked_at: None,
-        conditions,
-        emergency_override: false,
-        metadata: "".to_string(),
-    };
-    
-    // Store on blockchain
-    let consent_key = generate_consent_key(env, &consent_id);
-    env.storage().persistent().set(&consent_key, &consent);
-    
-    // Update patient consent index
-    update_patient_consent_index(env, patient_id, &consent_id);
-    
-    // Log consent grant
-    log_consent_event(env, patient_id, requester_id, "consent_granted", &consent_id);
-    
-    // Emit event
-    env.events().publish(
-        (symbol_short!("CONSENT"), symbol_short!("GRANTED")),
-        (patient_id, requester_id, consent_id),
-    );
-    
-    Ok(consent_id)
-}
+              grant_consent(patient, grantee, type, duration)
+                               │
+                               ▼
+                   ┌──────────────────────┐
+                   │  ACTIVE              │
+                   │  revoked = false     │
+                   │  now < expires_at    │
+                   └──────────┬───────────┘
+                              │
+          ┌───────────────────┼─────────────────────┐
+          │                   │                     │
+  revoke_consent()     now >= expires_at       grant_consent()
+          │                   │                     │
+          ▼                   ▼                     ▼
+   ┌────────────┐      ┌────────────┐        replaces the record
+   │  REVOKED   │      │  EXPIRED   │        and returns to ACTIVE
+   │ revoked=true│     │ (derived)  │
+   └────────────┘      └────────────┘
 ```
 
-### 2. Consent Verification
+Expired and revoked records are never deleted. Expiry is derived from `expires_at` whenever the record is read.
 
-**Access Control Check**:
-```rust
-pub fn verify_consent(
-    env: &Env,
-    patient_id: &Address,
-    requester_id: &Address,
-    required_permission: &str,
-    data_type: &str,
-) -> Result<ConsentVerification, ConsentError> {
-    // Get active consents
-    let active_consents = get_active_consents(env, patient_id, requester_id);
-    
-    for consent in active_consents {
-        // Check if consent covers required permission
-        if !consent.permissions.contains(&required_permission.to_string()) {
-            continue;
-        }
-        
-        // Check if consent covers data type
-        if !consent.data_types.contains(&data_type.to_string()) {
-            continue;
-        }
-        
-        // Check if consent has expired
-        if let Some(expires_at) = consent.expires_at {
-            if env.ledger().timestamp() > expires_at {
-                // Mark as expired
-                mark_consent_expired(env, &consent.consent_id);
-                continue;
-            }
-        }
-        
-        // Check if consent has been revoked
-        if consent.revoked_at.is_some() {
-            continue;
-        }
-        
-        return Ok(ConsentVerification {
-            valid: true,
-            consent_id: consent.consent_id.clone(),
-            expires_at: consent.expires_at,
-            conditions: consent.conditions.clone(),
-        });
-    }
-    
-    Err(ConsentError::NoValidConsent)
-}
-```
+### 1. Grant
 
-### 3. Consent Revocation
+Entry point: `grant_consent(patient, grantee, consent_type, duration_seconds)` in `contracts/vision_records/src/lib.rs`.
 
-**Revocation Process**:
-```rust
-pub fn revoke_consent(
-    env: &Env,
-    patient_id: &Address,
-    consent_id: &str,
-    reason: Option<String>,
-) -> Result<(), ConsentError> {
-    // Verify patient identity
-    require_patient_authentication(env, patient_id)?;
-    
-    // Get consent record
-    let consent_key = generate_consent_key(env, consent_id);
-    let mut consent = env.storage().persistent().get(&consent_key)
-        .ok_or(ConsentError::ConsentNotFound)?;
-    
-    // Verify patient owns the consent
-    if consent.patient_id != *patient_id {
-        return Err(ConsentError::UnauthorizedAccess);
-    }
-    
-    // Check if already revoked
-    if consent.revoked_at.is_some() {
-        return Err(ConsentError::AlreadyRevoked);
-    }
-    
-    // Revoke consent
-    consent.revoked_at = Some(env.ledger().timestamp());
-    env.storage().persistent().set(&consent_key, &consent);
-    
-    // Log revocation
-    log_consent_event(env, patient_id, &consent.requester_id, "consent_revoked", consent_id);
-    
-    // Emit event
-    env.events().publish(
-        (symbol_short!("CONSENT"), symbol_short!("REVOKED")),
-        (patient_id, consent.requester_id, consent_id),
-    );
-    
-    Ok(())
-}
-```
+1. The global circuit breaker must not be paused.
+2. `patient.require_auth()` must succeed.
+3. `duration_seconds` must be non-zero. Zero returns `InvalidInput`.
+4. `expires_at = now + duration_seconds`, using a saturating add.
+5. The record is written under `(CONSENT, patient, grantee)`. It **replaces** any existing record for that pair, including a revoked one, so a new grant reinstates access.
+6. The storage TTL of the entry is extended.
+7. If a previous record existed, a `CST_UPD` event is emitted with the old and new expiry. A `CST_GRT` event is always emitted.
 
-### 4. Emergency Override
+### 2. Verification
 
-**Emergency Access**:
-```rust
-pub fn emergency_access(
-    env: &Env,
-    patient_id: &Address,
-    requester_id: &Address,
-    required_permission: &str,
-    justification: String,
-) -> Result<EmergencyAccess, ConsentError> {
-    // Verify requester credentials
-    require_emergency_credentials(env, requester_id)?;
-    
-    // Check if emergency access is permitted
-    let patient_profile = get_patient_profile(env, patient_id)?;
-    if !patient_profile.emergency_access_enabled {
-        return Err(ConsentError::EmergencyAccessDisabled);
-    }
-    
-    // Create emergency access record
-    let emergency_access = EmergencyAccess {
-        patient_id: patient_id.clone(),
-        requester_id: requester_id.clone(),
-        permission: required_permission.to_string(),
-        justification,
-        accessed_at: env.ledger().timestamp(),
-        post_approval_required: true,
-        approved_at: None,
-    };
-    
-    // Store emergency access
-    let access_key = generate_emergency_access_key(env, patient_id);
-    env.storage().persistent().set(&access_key, &emergency_access);
-    
-    // Log emergency access
-    log_consent_event(env, patient_id, requester_id, "emergency_access", "");
-    
-    Ok(emergency_access)
-}
-```
+`has_active_consent(patient, grantee)` returns `true` only when all of these hold:
 
-## 🔧 Consent Management Interface
+- A record exists for the pair.
+- `revoked` is `false`.
+- `expires_at > now`. At the exact expiry second the consent is already inactive.
 
-### Patient Consent Dashboard
+`get_consent(patient, grantee)` returns the raw record and does not apply these checks. Callers that need an access decision must use `has_active_consent` or the ABAC checks below.
 
-**Features**:
-- View all active consents
-- Grant new consent
-- Revoke existing consent
-- Modify consent terms
-- View consent history
-- Emergency access settings
+### 3. Revocation
 
-**API Endpoints**:
-```rust
-// Get patient's active consents
-pub fn get_patient_consents(
-    env: &Env,
-    patient_id: &Address,
-) -> Vec<Consent> {
-    get_active_consents_for_patient(env, patient_id)
-}
+Entry point: `revoke_consent(patient, grantee)`.
 
-// Get consent details
-pub fn get_consent_details(
-    env: &Env,
-    consent_id: &str,
-) -> Consent {
-    let consent_key = generate_consent_key(env, consent_id);
-    env.storage().persistent().get(&consent_key)
-        .unwrap_or_default()
-}
+- Requires `patient.require_auth()`.
+- Sets `revoked = true` and keeps the record for audit.
+- If no record exists for the pair, the call still succeeds and still emits a `CST_REV` event. Monitoring code should not treat the event as proof that a record existed.
 
-// Check consent status
-pub fn check_consent_status(
-    env: &Env,
-    consent_id: &str,
-) -> ConsentStatus {
-    let consent = get_consent_details(env, consent_id);
-    
-    if consent.revoked_at.is_some() {
-        ConsentStatus::Revoked
-    } else if let Some(expires_at) = consent.expires_at {
-        if env.ledger().timestamp() > expires_at {
-            ConsentStatus::Expired
-        } else {
-            ConsentStatus::Active
-        }
-    } else {
-        ConsentStatus::Active
-    }
-}
-```
+### 4. Expiry
 
-### Provider Consent View
+Nothing has to be called to expire a consent. The record stops being active once `now >= expires_at`. The `CST_EXP` event type is defined in `contracts/vision_records/src/events.rs`, but no current entry point emits it. Off-chain systems that need an expiry notice must compute it from `expires_at`.
 
-**Features**:
-- View consents granted by patients
-- Check access rights for specific patients
-- Request additional consent
-- View consent expiration dates
-- Audit consent usage
+## ⏱️ TTL and Expiration Behavior
 
-**API Endpoints**:
-```rust
-// Check provider's access rights
-pub fn check_access_rights(
-    env: &Env,
-    provider_id: &Address,
-    patient_id: &Address,
-    permission: &str,
-    data_type: &str,
-) -> Result<AccessRights, ConsentError> {
-    verify_consent(env, patient_id, provider_id, permission, data_type)
-        .map(|verification| AccessRights {
-            has_access: verification.valid,
-            consent_id: verification.consent_id,
-            expires_at: verification.expires_at,
-            conditions: verification.conditions,
-        })
-}
+There are two separate clocks. Keep them apart when reasoning about consent:
 
-// Request consent from patient
-pub fn request_consent(
-    env: &Env,
-    provider_id: &Address,
-    patient_id: &Address,
-    permissions: Vec<String>,
-    data_types: Vec<String>,
-    purpose: String,
-    message: String,
-) -> Result<String, ConsentError> {
-    // Create consent request
-    let request_id = generate_request_id(env, provider_id, patient_id);
-    let consent_request = ConsentRequest {
-        request_id: request_id.clone(),
-        provider_id: provider_id.clone(),
-        patient_id: patient_id.clone(),
-        permissions,
-        data_types,
-        purpose,
-        message,
-        created_at: env.ledger().timestamp(),
-        status: RequestStatus::Pending,
-    };
-    
-    // Store request
-    let request_key = generate_request_key(env, &request_id);
-    env.storage().persistent().set(&request_key, &consent_request);
-    
-    // Notify patient
-    notify_patient_of_consent_request(env, patient_id, &request_id);
-    
-    Ok(request_id)
-}
-```
+| Clock | Where | Controls access? |
+|-------|-------|------------------|
+| `expires_at` on the record | Consent record | **Yes.** Access is decided by comparing it with the ledger timestamp. |
+| Storage TTL on the persistent entry | Ledger storage | No. It keeps the entry alive, and `grant_consent` extends it. |
 
-## 📊 Consent Analytics and Reporting
+Rules:
 
-### Consent Usage Analytics
+- Consent validity is always decided by `expires_at`. Whether the storage entry still exists does not change that decision.
+- `duration_seconds` must be non-zero. `validation::validate_duration` in `contracts/vision_records/src/validation.rs` also caps durations at 157,680,000 seconds (5 years). **The `grant_consent` entry point does not call that helper today**, so the entry point accepts durations above 5 years. Treat the cap as intended behavior, not current enforcement.
+- `ConsentManager` uses `expires = now + ttl` when a TTL is given, and treats `None` as no expiry. Its status is `Active` only when `now < expires`.
 
-**Metrics Tracked**:
-- Consent grant/revocation rates
-- Time-to-expiration statistics
-- Permission usage patterns
-- Emergency access frequency
-- Provider consent requests
+## 🔍 Filtering by Grantee and Subject
 
-**Analytics Functions**:
-```rust
-pub struct ConsentAnalytics {
-    pub total_consents: u64,
-    pub active_consents: u64,
-    pub expired_consents: u64,
-    pub revoked_consents: u64,
-    pub emergency_accesses: u64,
-    pub average_consent_duration_days: f64,
-    pub most_common_permissions: Vec<(String, u64)>,
-    pub consent_by_purpose: Vec<(String, u64)>,
-}
+On-chain storage has no list-by-grantee or list-by-patient function. Consent is looked up by the (patient, grantee) pair only. To find all consents for a grantee or patient on-chain, index the `CST_GRT`, `CST_UPD`, and `CST_REV` events off-chain.
 
-pub fn generate_consent_analytics(
-    env: &Env,
-    start_date: u64,
-    end_date: u64,
-) -> ConsentAnalytics {
-    // Analyze consent data within date range
-    let consents = query_consents_in_range(env, start_date, end_date);
-    
-    ConsentAnalytics {
-        total_consents: consents.len() as u64,
-        active_consents: count_active_consents(&consents),
-        expired_consents: count_expired_consents(&consents),
-        revoked_consents: count_revoked_consents(&consents),
-        emergency_accesses: count_emergency_accesses(&consents),
-        average_consent_duration_days: calculate_average_duration(&consents),
-        most_common_permissions: analyze_permission_usage(&consents),
-        consent_by_purpose: analyze_purpose_distribution(&consents),
-    }
-}
-```
+`ConsentManager` provides in-memory filters:
 
-### Compliance Reports
+| Function | Returns |
+|----------|---------|
+| `get_consent_status(id, now)` | `Active`, `Expired`, `Revoked`, or `NotGranted` |
+| `get_consent_attribute(id, now)` | The `ConsentAttribute` for one record, or `None` |
+| `get_active_consents_for_grantee(grantee, now)` | Active records whose grantee matches |
+| `get_active_consents_for_subject(subject, now)` | Active records whose subject matches |
 
-**HIPAA Consent Compliance Report**:
-```rust
-pub fn generate_consent_compliance_report(
-    env: &Env,
-    patient_id: &Address,
-    report_period: (u64, u64),
-) -> ConsentComplianceReport {
-    let consents = get_patient_consents_in_period(env, patient_id, report_period);
-    let access_logs = get_access_logs_for_patient(env, patient_id, report_period);
-    
-    ConsentComplianceReport {
-        patient_id: patient_id.clone(),
-        report_period,
-        total_consents_granted: consents.len(),
-        total_access_attempts: access_logs.len(),
-        authorized_access: count_authorized_access(&access_logs, &consents),
-        unauthorized_access: count_unauthorized_access(&access_logs, &consents),
-        consent_compliance_rate: calculate_compliance_rate(&access_logs, &consents),
-        emergency_access_incidents: count_emergency_access(&access_logs),
-        recommendations: generate_compliance_recommendations(&access_logs, &consents),
-    }
-}
-```
+Both list functions validate their input and return only records whose status is `Active` at `now`. Expired and revoked records are excluded.
 
-## 🛡️ Security and Privacy
+## 🛡️ ABAC Integration
 
-### Consent Data Protection
+Attribute-based access control (ABAC) adds policy checks on top of consent. Consent is necessary but not always sufficient. There are two integration points.
 
-**Security Measures**:
-- **Immutable Storage**: All consent records stored on-chain
-- **Digital Signatures**: Consent actions signed by patients
-- **Access Controls**: Only patients can modify their consent
-- **Audit Logging**: All consent operations logged
+### A. Consent as a policy condition (`consent_required`)
 
-**Privacy Measures**:
-- **Minimal Data Collection**: Only necessary consent information
-- **Patient Control**: Patients control all consent data
-- **Data Encryption**: Sensitive consent data encrypted
-- **Access Logging**: All consent access logged
+In `contracts/vision_records/src/rbac.rs`, an ABAC policy can set `consent_required`. When it does, evaluation:
 
-### Consent Validation
+1. Requires both a patient and a resource ID in the request context. If either is missing, access is denied.
+2. Reads the record under `(CONSENT, patient, user)`, where `user` is the requesting address.
+3. Denies access if the record is missing, is revoked, or has `expires_at <= current_time`.
 
-**Input Validation**:
-```rust
-fn validate_consent_input(
-    permissions: &Vec<String>,
-    data_types: &Vec<String>,
-    purpose: &str,
-    duration_days: Option<u64>,
-) -> Result<(), ConsentError> {
-    // Validate permissions
-    for permission in permissions {
-        if !is_valid_permission(permission) {
-            return Err(ConsentError::InvalidPermission);
-        }
-    }
-    
-    // Validate data types
-    for data_type in data_types {
-        if !is_valid_data_type(data_type) {
-            return Err(ConsentError::InvalidDataType);
-        }
-    }
-    
-    // Validate purpose
-    if purpose.is_empty() || purpose.len() > 500 {
-        return Err(ConsentError::InvalidPurpose);
-    }
-    
-    // Validate duration
-    if let Some(days) = duration_days {
-        if days > 365 * 5 { // 5 year maximum
-            return Err(ConsentError::InvalidDuration);
-        }
-    }
-    
-    Ok(())
-}
-```
+This check does **not** compare `consent_type` with the type the policy needs. Any unexpired, unrevoked consent satisfies it.
 
-## 🧪 Testing and Validation
+### B. Access level check (`check_access`)
 
-### Consent Testing
+`check_access(patient, grantee)` in `contracts/vision_records/src/lib.rs` returns `AccessLevel::None` unless all of these hold:
 
-```rust
-#[cfg(test)]
-mod consent_tests {
-    use super::*;
-    
-    #[test]
-    fn test_consent_grant_and_verification() {
-        let env = Env::default();
-        let patient = Address::generate(&env);
-        let provider = Address::generate(&env);
-        
-        // Grant consent
-        let consent_id = grant_consent(
-            &env,
-            &patient,
-            &provider,
-            vec!["read_medical".to_string()],
-            vec!["medical_history".to_string()],
-            "Treatment".to_string(),
-            Some(30), // 30 days
-            vec![],
-        ).unwrap();
-        
-        // Verify consent
-        let verification = verify_consent(
-            &env,
-            &patient,
-            &provider,
-            "read_medical",
-            "medical_history",
-        ).unwrap();
-        
-        assert!(verification.valid);
-        assert_eq!(verification.consent_id, consent_id);
-    }
-    
-    #[test]
-    fn test_consent_expiration() {
-        let env = Env::default();
-        let patient = Address::generate(&env);
-        let provider = Address::generate(&env);
-        
-        // Grant consent with 1 day expiration
-        let consent_id = grant_consent(
-            &env,
-            &patient,
-            &provider,
-            vec!["read_medical".to_string()],
-            vec!["medical_history".to_string()],
-            "Treatment".to_string(),
-            Some(1),
-            vec![],
-        ).unwrap();
-        
-        // Fast-forward time past expiration
-        env.ledger().set_timestamp(env.ledger().timestamp() + 24 * 60 * 60 + 1);
-        
-        // Verify consent should be expired
-        let result = verify_consent(
-            &env,
-            &patient,
-            &provider,
-            "read_medical",
-            "medical_history",
-        );
-        
-        assert!(result.is_err());
-        assert!(matches!(result.err(), Some(ConsentError::NoValidConsent)));
-    }
-    
-    #[test]
-    fn test_consent_revocation() {
-        let env = Env::default();
-        let patient = Address::generate(&env);
-        let provider = Address::generate(&env);
-        
-        // Grant consent
-        let consent_id = grant_consent(
-            &env,
-            &patient,
-            &provider,
-            vec!["read_medical".to_string()],
-            vec!["medical_history".to_string()],
-            "Treatment".to_string(),
-            Some(30),
-            vec![],
-        ).unwrap();
-        
-        // Revoke consent
-        revoke_consent(&env, &patient, &consent_id, Some("Patient request".to_string())).unwrap();
-        
-        // Verify consent is revoked
-        let status = check_consent_status(&env, &consent_id);
-        assert!(matches!(status, ConsentStatus::Revoked));
-        
-        // Verify access is denied
-        let result = verify_consent(
-            &env,
-            &patient,
-            &provider,
-            "read_medical",
-            "medical_history",
-        );
-        
-        assert!(result.is_err());
-    }
-}
-```
+1. An active consent exists for the pair (`has_active_consent`).
+2. An `AccessGrant` exists under `(ACCESS, patient, grantee)` and its `expires_at` is in the future.
+3. `evaluate_access_policies` allows the grantee for the patient.
+
+Only then is the grant's `level` returned.
+
+### Where consent is checked in record reads
+
+Record reads treat an active consent as one of several ways to get access. A caller who is the patient, a provider who created the record, or an address with `ReadAnyRecord` or `SystemAdmin` is allowed without consent. Otherwise the read falls back to `has_active_consent` and then to `check_access`.
+
+## 🚨 Emergency Access
+
+Emergency access is handled by separate entry points, not by consent records: `check_emergency_access` and `access_record_via_emergency` in `contracts/vision_records/src/lib.rs`, with an audit trail readable through `get_emergency_audit_trail`. The rules those functions apply are outside the scope of this guide. `ConsentType::Emergency` is only a label on a consent record and does not, by itself, grant emergency access.
+
+## 📣 Events
+
+| Topic | Emitted when | Notes |
+|-------|--------------|-------|
+| `CST_GRT` | A grant is made | Always emitted on grant |
+| `CST_UPD` | A grant replaces an existing record | Carries the old and new expiry |
+| `CST_REV` | `revoke_consent` is called | Emitted even if no record existed |
+| `CST_EXP` | Not emitted by current code | Defined only |
+
+Topics are `(event_name, patient, grantee)`, so indexers can filter by patient or grantee.
+
+## 🧪 Testing
+
+- `contracts/vision_records/tests/consent_management_test.rs`: event emission for grant, revoke, and update.
+- `contracts/vision_records/src/test_consent_management_failures.rs`: failure cases, including zero-duration grants.
+- `contracts/common/src/consent.rs`: unit tests for `ConsentManager` bounds, grant, revoke, and filtering.
+
+## 🚧 Not Implemented
+
+Earlier versions of this guide described features that do not exist in the current contracts. They are listed here so nobody relies on them:
+
+- A `Consent` struct with `consent_id`, `permissions`, `data_types`, `purpose`, `conditions`, and `metadata` fields. The on-chain record only has the fields shown above.
+- A per-patient consent index and a consent ID generator. Records are keyed by the (patient, grantee) pair.
+- Per-permission checks (for example `read_medical` or `share_research`). Access uses record-level access grants and ABAC policies instead.
+- Patient dashboards, provider consent views, consent analytics, and compliance report generation.
 
 ## 📚 References
 
-### Implementation References
-- [Consent Contract](../../contracts/common/src/consent.rs)
-- [Vision Records Consent](../../contracts/vision_records/src/consent.rs)
-- [Audit Trail Documentation](audit-trail.md)
-- [HIPAA Requirements Mapping](hipaa-mapping.md)
-
-### Regulatory References
-- [HIPAA Privacy Rule § 164.508](https://www.hhs.gov/hipaa/for-professionals/privacy/)
-- [HIPAA Security Rule § 164.312](https://www.hhs.gov/hipaa/for-professionals/security/)
-- [HITECH Act Requirements](https://www.hhs.gov/hipaa/for-professionals/special-topics/)
-
-### User Experience References
-- [Patient Portal Guide](../onboarding/patient-portal.md)
-- [Provider Portal Guide](../onboarding/provider-portal.md)
-- [API Documentation](../api/consent.md)
-
----
-
-**Last Updated**: 2025-02-25  
-**Next Review**: 2025-03-25  
-**Version**: 1.0
+- `contracts/vision_records/src/consent_management.rs`: consent types, record, and storage helpers
+- `contracts/vision_records/src/rbac.rs`: ABAC policy engine and the `consent_required` condition
+- `contracts/common/src/consent.rs`: `ConsentManager` and its validation rules
+- [Access Control Architecture](../access-control-architecture.md)

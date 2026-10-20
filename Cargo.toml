@@ -26,6 +26,8 @@ members = [
     "contracts/vault",
     "contracts/delegation",
     "contracts/governor",
+    "contracts/timelock",
+    "contracts/benches",
     "sdk/zk_prover",
     "test",
 ]

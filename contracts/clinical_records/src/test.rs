@@ -12,7 +12,7 @@ fn setup_test() -> (Env, ClinicalRecordsContractClient<'static>, Address, Addres
     let client = ClinicalRecordsContractClient::new(&env, &contract_id);
     let admin = Address::generate(&env);
     let vision_records = Address::generate(&env);
-    client.initialize(&admin, &vision_records);
+    client.initialize(&admin, &vision_records, &None);
     (env, client, admin, vision_records)
 }
 

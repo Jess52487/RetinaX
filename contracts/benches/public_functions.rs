@@ -1,5 +1,5 @@
+use benches::*;
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use your_crate_name::*;
 
 fn bench_add(c: &mut Criterion) {
     c.bench_function("add", |b| b.iter(|| add(black_box(10), black_box(20))));

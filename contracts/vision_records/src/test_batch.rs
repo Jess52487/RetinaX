@@ -243,15 +243,34 @@ fn test_batch_get_records() {
     let ids = client.add_records(&provider, &inputs);
     assert_eq!(ids.len(), 4);
 
-    // Retrieve a subset
+    // Retrieve a subset via get_records_by_ids
     let mut subset = Vec::new(&env);
     subset.push_back(1u64);
     subset.push_back(3u64);
 
-    let records = client.get_records(&subset);
+    let records = client.get_records_by_ids(&subset);
     assert_eq!(records.len(), 2);
     assert_eq!(records.get(0).unwrap().id, 1);
     assert_eq!(records.get(1).unwrap().id, 3);
+
+    // Test paginated get_records (offset 0, limit 2)
+    let page1 = client.get_records(&0, &2);
+    assert_eq!(page1.total, 4);
+    assert_eq!(page1.records.len(), 2);
+    assert_eq!(page1.records.get(0).unwrap().id, 1);
+    assert_eq!(page1.records.get(1).unwrap().id, 2);
+
+    // Test paginated get_records (offset 2, default limit: 0 -> 50)
+    let page2 = client.get_records(&2, &0);
+    assert_eq!(page2.total, 4);
+    assert_eq!(page2.records.len(), 2);
+    assert_eq!(page2.records.get(0).unwrap().id, 3);
+    assert_eq!(page2.records.get(1).unwrap().id, 4);
+
+    // Test paginated get_patient_records_paginated
+    let patient_page = client.get_patient_records_paginated(&patient, &0, &50);
+    assert_eq!(patient_page.total, 4);
+    assert_eq!(patient_page.ids.len(), 4);
 }
 
 #[test]
@@ -261,7 +280,7 @@ fn test_batch_get_records_not_found() {
     let mut ids = Vec::new(&env);
     ids.push_back(999u64);
 
-    let result = client.try_get_records(&ids);
+    let result = client.try_get_records_by_ids(&ids);
     assert_eq!(
         result.err().unwrap().unwrap(),
         ContractError::RecordNotFound
@@ -287,7 +306,7 @@ fn test_batch_get_records_partial_not_found() {
     ids.push_back(1u64);
     ids.push_back(999u64);
 
-    let result = client.try_get_records(&ids);
+    let result = client.try_get_records_by_ids(&ids);
     assert_eq!(
         result.err().unwrap().unwrap(),
         ContractError::RecordNotFound
@@ -442,7 +461,7 @@ fn test_batch_add_and_retrieve_round_trip() {
     let ids = client.add_records(&provider, &inputs);
 
     // Retrieve all via batch
-    let records = client.get_records(&ids);
+    let records = client.get_records_by_ids(&ids);
     assert_eq!(records.len(), 2);
 
     assert_eq!(records.get(0).unwrap().record_type, RecordType::Examination);

@@ -1,0 +1,29 @@
+[package]
+name = "benches"
+version.workspace = true
+authors.workspace = true
+license.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[lib]
+name = "benches"
+path = "src/lib.rs"
+
+[dev-dependencies]
+criterion = { version = "0.5", default-features = false }
+
+[[bench]]
+name = "gas_usage"
+path = "gas_usage.rs"
+harness = false
+
+[[bench]]
+name = "public_functions"
+path = "public_functions.rs"
+harness = false
+
+[[bench]]
+name = "regression"
+path = "regression.rs"
+harness = false

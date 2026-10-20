@@ -1,5 +1,5 @@
+use benches::*;
 use criterion::{criterion_group, criterion_main, Criterion};
-use your_crate_name::*;
 
 fn bench_gas_simulation(c: &mut Criterion) {
     c.bench_function("gas_sim_expensive_computation", |b| {

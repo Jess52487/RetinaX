@@ -13,6 +13,48 @@ const USR_GRPS: Symbol = symbol_short!("USR_GRPS");
 const ACC_POL: Symbol = symbol_short!("ACC_POL");
 const USR_CRED: Symbol = symbol_short!("USR_CRED");
 const REC_SENS: Symbol = symbol_short!("REC_SENS");
+const MAX_DEL_DEPTH: Symbol = symbol_short!("MAX_D_DP");
+const DEL_PARENT: Symbol = symbol_short!("DEL_PAR");
+
+pub const DEFAULT_MAX_DELEGATION_DEPTH: u32 = 3;
+
+/// Sets the maximum delegation chain depth allowed (admin only).
+pub fn set_max_delegation_depth(
+    env: &Env,
+    caller: &Address,
+    max_depth: u32,
+) -> Result<(), AccessControlError> {
+    crate::admin::require_admin(env, caller)?;
+    env.storage().instance().set(&MAX_DEL_DEPTH, &max_depth);
+    Ok(())
+}
+
+/// Gets the configured maximum delegation chain depth (default: 3).
+pub fn get_max_delegation_depth(env: &Env) -> u32 {
+    env.storage()
+        .instance()
+        .get(&MAX_DEL_DEPTH)
+        .unwrap_or(DEFAULT_MAX_DELEGATION_DEPTH)
+}
+
+/// Helper to compute delegation depth for delegator
+fn get_delegator_depth(env: &Env, delegator: &Address) -> u32 {
+    let mut depth: u32 = 0;
+    let mut current: Option<Address> = env
+        .storage()
+        .persistent()
+        .get(&(DEL_PARENT, delegator.clone()));
+
+    // Traverse upwards with safety ceiling to prevent infinite loop on cycles
+    while let Some(parent) = current {
+        depth = depth.saturating_add(1);
+        if depth > 100 {
+            break;
+        }
+        current = env.storage().persistent().get(&(DEL_PARENT, parent));
+    }
+    depth
+}
 
 /// Assigns a role to a user with an optional expiration timestamp (0 = permanent).
 pub fn assign_role(
@@ -23,6 +65,7 @@ pub fn assign_role(
     expires_at: u64,
 ) -> Result<(), AccessControlError> {
     caller.require_auth();
+
     // Caller must have ManageUsers permission or be Admin
     if !has_permission(env, caller, &Permission::ManageUsers) {
         return Err(AccessControlError::Unauthorized);
@@ -255,6 +298,14 @@ pub fn delegate_role(
     expires_at: u64,
 ) -> Result<(), AccessControlError> {
     delegator.require_auth();
+
+    let max_depth = get_max_delegation_depth(env);
+    let current_depth = get_delegator_depth(env, delegator);
+    let new_depth = current_depth.saturating_add(1);
+    if new_depth > max_depth {
+        return Err(AccessControlError::DelegationDepthExceeded);
+    }
+
     let key = (DELEGATION_KEY, delegator.clone(), delegatee.clone());
     let delegation = Delegation {
         delegator: delegator.clone(),
@@ -263,6 +314,9 @@ pub fn delegate_role(
         expires_at,
     };
     env.storage().persistent().set(&key, &delegation);
+    env.storage()
+        .persistent()
+        .set(&(DEL_PARENT, delegatee.clone()), delegator);
     Ok(())
 }
 
@@ -275,6 +329,9 @@ pub fn revoke_delegation(
     delegator.require_auth();
     let key = (DELEGATION_KEY, delegator.clone(), delegatee.clone());
     env.storage().persistent().remove(&key);
+    env.storage()
+        .persistent()
+        .remove(&(DEL_PARENT, delegatee.clone()));
     Ok(())
 }
 
@@ -287,6 +344,14 @@ pub fn delegate_permissions(
     expires_at: u64,
 ) -> Result<(), AccessControlError> {
     delegator.require_auth();
+
+    let max_depth = get_max_delegation_depth(env);
+    let current_depth = get_delegator_depth(env, delegator);
+    let new_depth = current_depth.saturating_add(1);
+    if new_depth > max_depth {
+        return Err(AccessControlError::DelegationDepthExceeded);
+    }
+
     let key = (SCOPED_DEL_KEY, delegator.clone(), delegatee.clone());
     let scoped = ScopedDelegation {
         delegator: delegator.clone(),
@@ -295,6 +360,9 @@ pub fn delegate_permissions(
         expires_at,
     };
     env.storage().persistent().set(&key, &scoped);
+    env.storage()
+        .persistent()
+        .set(&(DEL_PARENT, delegatee.clone()), delegator);
     Ok(())
 }
 
@@ -307,8 +375,12 @@ pub fn revoke_scoped_delegation(
     delegator.require_auth();
     let key = (SCOPED_DEL_KEY, delegator.clone(), delegatee.clone());
     env.storage().persistent().remove(&key);
+    env.storage()
+        .persistent()
+        .remove(&(DEL_PARENT, delegatee.clone()));
     Ok(())
 }
+
 
 /// Creates a new ACL group with a set of permissions.
 pub fn create_group(

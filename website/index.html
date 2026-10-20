@@ -22,7 +22,9 @@
   <!-- Primary Stylesheet -->
   <link rel="stylesheet" href="styles.css">
 
-  <!-- RepoAvatar Component Stylesheet -->
+  <!-- Component Stylesheets -->
+  <link rel="stylesheet" href="components/navbar.css">
+  <link rel="stylesheet" href="components/responsive.css">
   <link rel="stylesheet" href="components/repo-avatar.css">
   <link rel="stylesheet" href="components/contract-address-display.css">
 </head>
@@ -39,7 +41,13 @@
         <span class="brand-badge" aria-label="Protocol Version Soroban v23" data-i18n-aria-label="nav.brandBadgeAria">Soroban v23</span>
       </a>
 
-      <nav class="nav-menu" aria-label="Main Navigation" data-i18n-aria-label="nav.mainNavigation">
+      <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <nav class="nav-menu" id="primary-nav" aria-label="Main Navigation">
         <ul class="nav-links" role="menubar">
           <li role="none"><a href="#overview" class="nav-link" role="menuitem" aria-label="Overview section" data-i18n-aria-label="nav.overviewAria" aria-current="page" data-i18n="nav.overview">Overview</a></li>
           <li role="none"><a href="#privacy" class="nav-link" role="menuitem" aria-label="ZK Privacy section" data-i18n-aria-label="nav.privacyAria" data-i18n="nav.privacy">ZK Privacy</a></li>
@@ -606,5 +614,37 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
   <script src="components/error-feedback.js"></script>
 
   <script src="app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const nav = document.querySelector('.nav-menu');
+      const toggle = document.querySelector('.nav-toggle');
+      const links = document.querySelectorAll('.nav-link');
+
+      if (!nav || !toggle) return;
+
+      const closeMenu = () => {
+        nav.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', 'Open navigation menu');
+      };
+
+      toggle.addEventListener('click', () => {
+        const isOpen = nav.classList.toggle('is-open');
+        toggle.setAttribute('aria-expanded', String(isOpen));
+        toggle.setAttribute('aria-label', isOpen ? 'Close navigation menu' : 'Open navigation menu');
+      });
+
+      links.forEach((link) => {
+        link.addEventListener('click', closeMenu);
+      });
+
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && nav.classList.contains('is-open')) {
+          closeMenu();
+          toggle.focus();
+        }
+      });
+    });
+  </script>
 </body>
 </html>

@@ -3,15 +3,17 @@
 
 #[cfg(test)]
 mod timestamp_boundary_tests {
-    use super::*;
 
     #[test]
     fn test_timestamp_zero() {
         // Test with ledger timestamp set to 0
         let current_time = 0u64;
         let execute_after = 1000u64;
-        
-        assert!(current_time < execute_after, "Should not be executable at time 0");
+
+        assert!(
+            current_time < execute_after,
+            "Should not be executable at time 0"
+        );
     }
 
     #[test]
@@ -19,8 +21,11 @@ mod timestamp_boundary_tests {
         // Test with ledger timestamp at u64::MAX
         let current_time = u64::MAX;
         let execute_after = 1000u64;
-        
-        assert!(current_time >= execute_after, "Should be executable at u64::MAX");
+
+        assert!(
+            current_time >= execute_after,
+            "Should be executable at u64::MAX"
+        );
     }
 
     #[test]
@@ -28,8 +33,11 @@ mod timestamp_boundary_tests {
         // Test timestamp just before expiry boundary
         let current_time = 999u64;
         let execute_after = 1000u64;
-        
-        assert!(current_time < execute_after, "Should not be executable 1 second before");
+
+        assert!(
+            current_time < execute_after,
+            "Should not be executable 1 second before"
+        );
     }
 
     #[test]
@@ -37,8 +45,11 @@ mod timestamp_boundary_tests {
         // Test timestamp exactly at expiry boundary
         let current_time = 1000u64;
         let execute_after = 1000u64;
-        
-        assert!(current_time >= execute_after, "Should be executable at exact expiry");
+
+        assert!(
+            current_time >= execute_after,
+            "Should be executable at exact expiry"
+        );
     }
 
     #[test]
@@ -46,8 +57,11 @@ mod timestamp_boundary_tests {
         // Test timestamp just after expiry boundary
         let current_time = 1001u64;
         let execute_after = 1000u64;
-        
-        assert!(current_time >= execute_after, "Should be executable 1 second after");
+
+        assert!(
+            current_time >= execute_after,
+            "Should be executable 1 second after"
+        );
     }
 
     #[test]
@@ -56,7 +70,7 @@ mod timestamp_boundary_tests {
         // Test timestamp rollback (earlier than previous block)
         let previous_timestamp = 1000u64;
         let current_timestamp = 999u64;
-        
+
         if current_timestamp < previous_timestamp {
             panic!("timestamp_rollback");
         }
@@ -67,9 +81,12 @@ mod timestamp_boundary_tests {
         // Test duration calculation that could overflow
         let start_time = 100u64;
         let end_time = u64::MAX;
-        
+
         let duration = end_time.checked_sub(start_time);
-        assert!(duration.is_some(), "Duration calculation should not overflow");
+        assert!(
+            duration.is_some(),
+            "Duration calculation should not overflow"
+        );
     }
 
     #[test]
@@ -77,16 +94,19 @@ mod timestamp_boundary_tests {
         // Test calculating future timestamp that could overflow
         let current = u64::MAX - 100;
         let duration = 200u64;
-        
+
         let future = current.checked_add(duration);
-        assert!(future.is_none(), "Future timestamp calculation should detect overflow");
+        assert!(
+            future.is_none(),
+            "Future timestamp calculation should detect overflow"
+        );
     }
 
     #[test]
     fn test_monotonicity_assumption() {
         // Document and test monotonicity assumption
-        let timestamps = vec![100u64, 200u64, 300u64, 400u64];
-        
+        let timestamps = [100u64, 200u64, 300u64, 400u64];
+
         for window in timestamps.windows(2) {
             assert!(
                 window[1] >= window[0],

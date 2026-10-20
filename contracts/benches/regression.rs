@@ -1,6 +1,6 @@
+use benches::*;
 use criterion::{criterion_group, criterion_main, Criterion};
 use std::time::Instant;
-use your_crate_name::*;
 
 fn regression_test_add() {
     let start = Instant::now();
@@ -16,7 +16,7 @@ fn regression_test_add() {
 }
 
 fn bench_regression(c: &mut Criterion) {
-    c.bench_function("regression_test_add", |b| b.iter(|| regression_test_add()));
+    c.bench_function("regression_test_add", |b| b.iter(regression_test_add));
 }
 
 criterion_group!(regression_group, bench_regression);
