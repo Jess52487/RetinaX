@@ -192,6 +192,7 @@
 
 .toast {
   pointer-events: auto;
+  visibility: hidden;
   min-width: 320px;
   max-width: 480px;
   padding: 14px 18px;
@@ -205,12 +206,28 @@
   box-shadow: var(--shadow-lg);
   transform: translateX(120%);
   opacity: 0;
-  transition: transform 0.3s ease, opacity 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease,
+    visibility 0s linear 0.3s;
 }
 
 .toast.show {
+  visibility: visible;
   transform: translateX(0);
   opacity: 1;
+  transition:
+    transform 0.3s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.3s ease,
+    visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .toast.show {
+    transition-duration: 0.01ms;
+    transition-delay: 0s;
+  }
 }
 
 .toast-pending {
