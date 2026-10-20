@@ -4,6 +4,13 @@
 })(typeof self !== 'undefined' ? self : this, function () {
   'use strict';
   const ElementBase = typeof HTMLElement !== 'undefined' ? HTMLElement : function () {};
+  function t(key, fallback) {
+    if (typeof window !== 'undefined' && window.RetinaXI18n && window.RetinaXI18n.t) {
+      const value = window.RetinaXI18n.t(key, {}, fallback);
+      if (value) return value;
+    }
+    return fallback;
+  }
   function shorten(address, start, end) {
     const value = String(address || '').trim();
     return value.length <= start + end + 1
@@ -25,8 +32,13 @@
         (this.getAttribute && this.getAttribute('address')) || this.textContent.trim();
       if (!address) return;
       this._address = address;
+      const copyLabel = t('common.copyContractAddress', 'Copy contract address');
       this.innerHTML =
-        '<button type="button" class="contract-address-display__button" aria-label="Copy contract address" title="Copy contract address">' +
+        '<button type="button" class="contract-address-display__button" aria-label="' +
+        copyLabel +
+        '" title="' +
+        copyLabel +
+        '">' +
         '<span class="contract-address-display__value">' +
         shorten(address, 6, 6) +
         '</span>' +
@@ -50,11 +62,11 @@
           document.execCommand('copy');
           input.remove();
         }
-        this._status.textContent = 'Copied';
-        this._button.setAttribute('aria-label', 'Contract address copied');
+        this._status.textContent = t('common.copied', 'Copied');
+        this._button.setAttribute('aria-label', t('common.contractAddressCopied', 'Contract address copied'));
       } catch (_) {
-        this._status.textContent = 'Copy failed';
-        this._button.setAttribute('aria-label', 'Copy contract address failed');
+        this._status.textContent = t('common.copyFailed', 'Copy failed');
+        this._button.setAttribute('aria-label', t('common.copyContractAddressFailed', 'Copy contract address failed'));
       }
     }
   }

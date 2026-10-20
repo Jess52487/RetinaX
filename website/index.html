@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" dir="ltr" data-language="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RetinaX — Decentralized Vision Care Records & AI Diagnostics Protocol on Stellar</title>
-  <meta name="description" content="RetinaX is a patient-controlled, privacy-preserving vision health protocol built on Stellar (Soroban WASM) featuring ZK-privacy proofs, FHIR v4 compliance, and automated AI diagnostic provider rotation.">
+  <title data-i18n="meta.title">RetinaX — Decentralized Vision Care Records & AI Diagnostics Protocol on Stellar</title>
+  <meta name="description" content="RetinaX is a patient-controlled, privacy-preserving vision health protocol built on Stellar (Soroban WASM) featuring ZK-privacy proofs, FHIR v4 compliance, and automated AI diagnostic provider rotation." data-i18n-content="meta.description">
   
   <!-- Fonts: Fraunces Editorial Serif + Plus Jakarta Sans + JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -30,15 +30,15 @@
 </head>
 <body>
   <!-- Skip to Main Content Link for Keyboard & Screen Reader Users -->
-  <a href="#overview" class="skip-link">Skip to main content</a>
+  <a href="#overview" class="skip-link" data-i18n="nav.skip">Skip to main content</a>
 
   <!-- Header Navigation -->
   <header class="navbar" role="banner">
     <div class="container nav-container">
-      <a href="#" class="brand-logo" aria-label="RetinaX Protocol Home">
+      <a href="#" class="brand-logo" aria-label="RetinaX Protocol Home" data-i18n-aria-label="nav.brandAria">
         <img src="assets/logo.jpg" alt="RetinaX Logo" class="logo-img">
         <span class="brand-text">RetinaX</span>
-        <span class="brand-badge" aria-label="Protocol Version Soroban v23">Soroban v23</span>
+        <span class="brand-badge" aria-label="Protocol Version Soroban v23" data-i18n-aria-label="nav.brandBadgeAria">Soroban v23</span>
       </a>
 
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="primary-nav" aria-label="Open navigation menu">
@@ -49,29 +49,32 @@
 
       <nav class="nav-menu" id="primary-nav" aria-label="Main Navigation">
         <ul class="nav-links" role="menubar">
-          <li role="none"><a href="#overview" class="nav-link" role="menuitem" aria-label="Overview section" aria-current="page">Overview</a></li>
-          <li role="none"><a href="#privacy" class="nav-link" role="menuitem" aria-label="ZK Privacy section">ZK Privacy</a></li>
-          <li role="none"><a href="#ai-oracle" class="nav-link" role="menuitem" aria-label="AI Oracle section">AI Oracle</a></li>
-          <li role="none"><a href="#demo" class="nav-link" role="menuitem" aria-label="Playground section">Playground</a></li>
-          <li role="none"><a href="#contracts" class="nav-link" role="menuitem" aria-label="Contracts section">Contracts</a></li>
+          <li role="none"><a href="#overview" class="nav-link" role="menuitem" aria-label="Overview section" data-i18n-aria-label="nav.overviewAria" aria-current="page" data-i18n="nav.overview">Overview</a></li>
+          <li role="none"><a href="#privacy" class="nav-link" role="menuitem" aria-label="ZK Privacy section" data-i18n-aria-label="nav.privacyAria" data-i18n="nav.privacy">ZK Privacy</a></li>
+          <li role="none"><a href="#ai-oracle" class="nav-link" role="menuitem" aria-label="AI Oracle section" data-i18n-aria-label="nav.aiOracleAria" data-i18n="nav.aiOracle">AI Oracle</a></li>
+          <li role="none"><a href="#demo" class="nav-link" role="menuitem" aria-label="Playground section" data-i18n-aria-label="nav.playgroundAria" data-i18n="nav.playground">Playground</a></li>
+          <li role="none"><a href="#contracts" class="nav-link" role="menuitem" aria-label="Contracts section" data-i18n-aria-label="nav.contractsAria" data-i18n="nav.contracts">Contracts</a></li>
         </ul>
       </nav>
 
       <div class="nav-actions">
-        <button class="btn btn-secondary theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode">🌙 Dark mode</button>
-        <div class="network-pill" role="status" aria-label="Network status: Stellar Testnet">
-          <span class="status-dot" aria-hidden="true"></span>
-          <span>Stellar Testnet</span>
+        <div class="language-selector">
+          <span class="language-selector__icon" aria-hidden="true">🌐</span>
+          <label class="sr-only" for="language-selector" data-i18n="nav.languageLabel">Language</label>
+          <select id="language-selector" name="language" autocomplete="off" aria-label="Select language">
+            <option value="en" lang="en">English</option>
+            <option value="es" lang="es">Español</option>
+          </select>
         </div>
-        <connect-wallet-button id="btn-connect-wallet" label="Connect Wallet" network="Stellar Testnet"></connect-wallet-button>
-        <a href="https://github.com/RetinaX-Org/RetinaX" target="_blank" class="btn btn-secondary">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-        <button class="btn btn-primary" id="btn-connect-wallet" style="padding: 0.5rem 1rem;" aria-label="Connect Stellar Wallet" aria-haspopup="dialog">
-          Connect Wallet
-        </button>
-        <a href="https://github.com/RetinaX-Org/RetinaX" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" aria-label="View RetinaX on GitHub (opens in new tab)">
+        <button class="btn btn-secondary theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode" data-i18n-aria-label="nav.themeToggleToDark" data-i18n="nav.themeDark">🌙 Dark mode</button>
+        <div class="network-pill" role="status" aria-label="Network status: Stellar Testnet" data-i18n-aria-label="nav.networkStatus">
+          <span class="status-dot" aria-hidden="true"></span>
+          <span data-i18n="nav.network">Stellar Testnet</span>
+        </div>
+        <connect-wallet-button id="btn-connect-wallet" label="Connect Wallet" data-i18n-label="nav.connectWallet" network="Stellar Testnet"></connect-wallet-button>
+        <a href="https://github.com/RetinaX-Org/RetinaX" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" aria-label="View RetinaX on GitHub (opens in new tab)" data-i18n-aria-label="nav.githubAria">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
-          GitHub Org
+          <span data-i18n="nav.githubOrg">GitHub Org</span>
         </a>
       </div>
     </div>
@@ -83,24 +86,24 @@
       <div class="hero-grid">
         <div class="hero-text-content" data-aos="fade-right" data-aos-duration="1000">
           <div class="hero-tag">
-            <span>Healthcare Infrastructure</span>
+            <span data-i18n="hero.tagHealthcare">Healthcare Infrastructure</span>
             <span>•</span>
-            <span>Stellar Soroban</span>
+            <span data-i18n="hero.tagStellar">Stellar Soroban</span>
           </div>
 
-          <h1 class="hero-title">
+          <h1 class="hero-title" data-i18n="hero.title">
             Decentralized Vision Care Records & Verifiable AI Diagnostics
           </h1>
 
-          <p class="hero-sub">
+          <p class="hero-sub" data-i18n="hero.subtitle">
             RetinaX replaces fragmented Electronic Medical Record (EMR) siloes with a patient-controlled, privacy-preserving health data infrastructure. Featuring zero-knowledge proofs, FHIR v4 compliance, and automated AI diagnostic oracle rotation on Soroban.
           </p>
 
           <div class="hero-cta-group">
-            <a href="#demo" class="btn btn-primary">
+            <a href="#demo" class="btn btn-primary" data-i18n="hero.ctaPlayground">
               Launch Live Playground
             </a>
-            <a href="https://github.com/RetinaX-Org/RetinaX" target="_blank" class="btn btn-outline">
+            <a href="https://github.com/RetinaX-Org/RetinaX" target="_blank" class="btn btn-outline" data-i18n="hero.ctaRepository">
               Explore Repository
             </a>
           </div>
@@ -108,11 +111,11 @@
 
         <!-- Embedded Contextual Image 1: Clinical Eye Scanner -->
         <div class="hero-image-wrapper" data-aos="fade-left" data-aos-duration="1000">
-          <img src="assets/hero.jpg" alt="Optometrist using digital eye examination scanner" class="hero-img">
+          <img src="assets/hero.jpg" alt="Optometrist using digital eye examination scanner" class="hero-img" data-i18n-alt="hero.imageAlt">
           <div class="image-caption-badge">
-            <span>🏥 Clinical Practice Verification</span>
+            <span data-i18n="hero.imageCaption">🏥 Clinical Practice Verification</span>
             <span>•</span>
-            <span>Stellar Real-Time Audit</span>
+            <span data-i18n="hero.imageAudit">Stellar Real-Time Audit</span>
           </div>
         </div>
       </div>
@@ -121,19 +124,19 @@
       <div class="stats-bar" data-aos="fade-up" data-aos-delay="200">
         <div class="stat-item">
           <div class="stat-num" id="num-finality">5s</div>
-          <div class="stat-label">Ledger Finality</div>
+          <div class="stat-label" data-i18n="hero.statFinality">Ledger Finality</div>
         </div>
         <div class="stat-item">
           <div class="stat-num" id="num-fee">&lt; $0.0001</div>
-          <div class="stat-label">Avg Transaction Fee</div>
+          <div class="stat-label" data-i18n="hero.statFee">Avg Transaction Fee</div>
         </div>
         <div class="stat-item">
           <div class="stat-num" id="num-sovereignty">100%</div>
-          <div class="stat-label">Patient Data Sovereignty</div>
+          <div class="stat-label" data-i18n="hero.statSovereignty">Patient Data Sovereignty</div>
         </div>
         <div class="stat-item">
-          <div class="stat-num" id="num-contracts">25</div>
-          <div class="stat-label">WASM Smart Contracts</div>
+          <div class="stat-num" id="num-contracts">24</div>
+          <div class="stat-label" data-i18n="hero.statContracts">WASM Smart Contracts</div>
         </div>
       </div>
     </div>
@@ -145,32 +148,32 @@
       <div class="feature-grid">
         <!-- Embedded Contextual Image 2: ZK Privacy Dashboard -->
         <div class="segment-img-card" data-aos="fade-right">
-          <img src="assets/privacy.jpg" alt="Zero knowledge medical privacy dashboard" class="segment-img">
+          <img src="assets/privacy.jpg" alt="Zero knowledge medical privacy dashboard" class="segment-img" data-i18n-alt="privacy.imageAlt">
         </div>
 
         <div class="feature-content" data-aos="fade-left">
-          <div class="hero-tag">Zero-Knowledge Architecture</div>
-          <h2>Patient-Controlled Privacy & Anonymous Verification</h2>
-          <p>
+          <div class="hero-tag" data-i18n="privacy.tag">Zero-Knowledge Architecture</div>
+          <h2 data-i18n="privacy.title">Patient-Controlled Privacy & Anonymous Verification</h2>
+          <p data-i18n="privacy.body">
             RetinaX integrates Groth16 zk-SNARK verifiers on Soroban, allowing patients to prove medical eligibility—such as meeting visual acuity standards for driver licensing—without revealing private prescriptions or personal identity.
           </p>
 
           <ul class="feature-list">
             <li>
               <span class="check-icon">✓</span>
-              <span>Client-Side AES Encryption for all medical payloads prior to IPFS storage.</span>
+              <span data-i18n="privacy.bullet1">Client-Side AES Encryption for all medical payloads prior to IPFS storage.</span>
             </li>
             <li>
               <span class="check-icon">✓</span>
-              <span>Instant Granular Revocation: Patient controls access duration for doctors.</span>
+              <span data-i18n="privacy.bullet2">Instant Granular Revocation: Patient controls access duration for doctors.</span>
             </li>
             <li>
               <span class="check-icon">✓</span>
-              <span>GDPR Art. 25 & HIPAA compliant data transit boundary rules.</span>
+              <span data-i18n="privacy.bullet3">GDPR Art. 25 & HIPAA compliant data transit boundary rules.</span>
             </li>
           </ul>
 
-          <a href="#demo" class="btn btn-outline">Test ZK Proof Generator</a>
+          <a href="#demo" class="btn btn-outline" data-i18n="privacy.cta">Test ZK Proof Generator</a>
         </div>
       </div>
     </div>
@@ -181,33 +184,33 @@
     <div class="container">
       <div class="feature-grid reverse">
         <div class="feature-content" data-aos="fade-right">
-          <div class="hero-tag">AI Diagnostic Integration</div>
-          <h2>Decentralized AI Oracles with Automated Failover</h2>
-          <p>
+          <div class="hero-tag" data-i18n="aiOracle.tag">AI Diagnostic Integration</div>
+          <h2 data-i18n="aiOracle.title">Decentralized AI Oracles with Automated Failover</h2>
+          <p data-i18n="aiOracle.body">
             AI computer-vision models evaluate retinal scans for diabetic retinopathy and glaucoma risk. The `ai_integration` Soroban contract monitors provider response latency and automatically rotates execution to fallback oracle nodes if SLA limits fail.
           </p>
 
           <ul class="feature-list">
             <li>
               <span class="check-icon">✓</span>
-              <span>On-Chain Provider Health Tracking (`Active`, `Paused`, `Retired`).</span>
+              <span data-i18n="aiOracle.bullet1">On-Chain Provider Health Tracking (`Active`, `Paused`, `Retired`).</span>
             </li>
             <li>
               <span class="check-icon">✓</span>
-              <span>Automated Weight Rotation when primary oracle exceeds SLA response thresholds.</span>
+              <span data-i18n="aiOracle.bullet2">Automated Weight Rotation when primary oracle exceeds SLA response thresholds.</span>
             </li>
             <li>
               <span class="check-icon">✓</span>
-              <span>FHIR v4 LOINC-coded diagnostic report generation.</span>
+              <span data-i18n="aiOracle.bullet3">FHIR v4 LOINC-coded diagnostic report generation.</span>
             </li>
           </ul>
 
-          <a href="#demo" class="btn btn-primary">Simulate Oracle Failover</a>
+          <a href="#demo" class="btn btn-primary" data-i18n="aiOracle.cta">Simulate Oracle Failover</a>
         </div>
 
         <!-- Embedded Contextual Image 3: AI Retinal Diagnostic Suite -->
         <div class="segment-img-card" data-aos="fade-left">
-          <img src="assets/ai_oracle.jpg" alt="AI diagnostic retinal scan dashboard" class="segment-img">
+          <img src="assets/ai_oracle.jpg" alt="AI diagnostic retinal scan dashboard" class="segment-img" data-i18n-alt="aiOracle.imageAlt">
         </div>
       </div>
     </div>
@@ -217,52 +220,52 @@
   <section class="demo-section" id="demo">
     <div class="container">
       <div class="section-header" data-aos="fade-up">
-        <h2 class="section-title">Interactive Protocol Playground</h2>
-        <p class="section-desc">Test real-time execution of role access grants, zero-knowledge proofs, AI oracle failovers, and FHIR v4 converters.</p>
+        <h2 class="section-title" data-i18n="demo.title">Interactive Protocol Playground</h2>
+        <p class="section-desc" data-i18n="demo.desc">Test real-time execution of role access grants, zero-knowledge proofs, AI oracle failovers, and FHIR v4 converters.</p>
       </div>
 
       <div class="demo-box" data-aos="fade-up" data-aos-delay="100">
-        <div class="demo-nav" role="tablist" aria-label="Interactive Protocol Playground Modules">
-          <button class="demo-tab-btn active" data-tab="rbac" role="tab" id="tab-rbac" aria-selected="true" aria-controls="panel-rbac" aria-label="Access Control Module">🔑 1. Access Control</button>
-          <button class="demo-tab-btn" data-tab="zk" role="tab" id="tab-zk" aria-selected="false" aria-controls="panel-zk" aria-label="Zero-Knowledge Proof Generator Module">🛡️ 2. ZK Proof Generator</button>
-          <button class="demo-tab-btn" data-tab="ai" role="tab" id="tab-ai" aria-selected="false" aria-controls="panel-ai" aria-label="AI Oracle Rotation Module">🤖 3. AI Oracle Rotation</button>
-          <button class="demo-tab-btn" data-tab="fhir" role="tab" id="tab-fhir" aria-selected="false" aria-controls="panel-fhir" aria-label="FHIR v4 Converter Module">🏥 4. FHIR v4 Converter</button>
-          <button class="demo-tab-btn" data-tab="fetch" role="tab" id="tab-fetch" aria-selected="false" aria-controls="panel-fetch" aria-label="Data Fetching Module">📊 5. Data Fetching</button>
+        <div class="demo-nav" role="tablist" aria-label="Interactive Protocol Playground Modules" data-i18n-aria-label="demo.tablistAria">
+          <button class="demo-tab-btn active" data-tab="rbac" role="tab" id="tab-rbac" aria-selected="true" aria-controls="panel-rbac" aria-label="Access Control Module" data-i18n-aria-label="demo.tabRbacAria" data-i18n="demo.tabRbac">🔑 1. Access Control</button>
+          <button class="demo-tab-btn" data-tab="zk" role="tab" id="tab-zk" aria-selected="false" aria-controls="panel-zk" aria-label="Zero-Knowledge Proof Generator Module" data-i18n-aria-label="demo.tabZkAria" data-i18n="demo.tabZk">🛡️ 2. ZK Proof Generator</button>
+          <button class="demo-tab-btn" data-tab="ai" role="tab" id="tab-ai" aria-selected="false" aria-controls="panel-ai" aria-label="AI Oracle Rotation Module" data-i18n-aria-label="demo.tabAiAria" data-i18n="demo.tabAi">🤖 3. AI Oracle Rotation</button>
+          <button class="demo-tab-btn" data-tab="fhir" role="tab" id="tab-fhir" aria-selected="false" aria-controls="panel-fhir" aria-label="FHIR v4 Converter Module" data-i18n-aria-label="demo.tabFhirAria" data-i18n="demo.tabFhir">🏥 4. FHIR v4 Converter</button>
+          <button class="demo-tab-btn" data-tab="fetch" role="tab" id="tab-fetch" aria-selected="false" aria-controls="panel-fetch" aria-label="Data Fetching Module" data-i18n-aria-label="demo.tabFetchAria" data-i18n="demo.tabFetch">📊 5. Data Fetching</button>
         </div>
 
         <div class="demo-body">
           <!-- Panel 1: RBAC Access Control -->
           <div class="demo-tab-panel active" id="panel-rbac">
             <form class="control-panel" aria-label="Role-Based Access Control Simulation Form">
-              <h3>Role-Based Access Control (RBAC)</h3>
-              <p style="color: var(--text-muted); font-size: 0.9rem;">Simulate patient access permission grants enforced by Soroban <code>require_auth()</code>.</p>
+              <h3 data-i18n="demo.rbacTitle">Role-Based Access Control (RBAC)</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem;" data-i18n="demo.rbacDesc">Simulate patient access permission grants enforced by Soroban <code>require_auth()</code>.</p>
               
               <div class="form-group">
-                <label class="form-label" for="input-patient-addr">Patient Stellar Address</label>
-                <input type="text" id="input-patient-addr" name="patientAddress" class="form-input" value="GDC...PATIENT_KEY_99X" required aria-required="true" aria-label="Patient Stellar Address">
+                <label class="form-label" for="input-patient-addr" data-i18n="demo.patientAddress">Patient Stellar Address</label>
+                <input type="text" id="input-patient-addr" name="patientAddress" class="form-input" value="GDC...PATIENT_KEY_99X" required aria-required="true" aria-label="Patient Stellar Address" data-i18n-aria-label="demo.patientAddress">
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="select-doctor">Target Doctor / Clinic</label>
-                <select class="form-select" required aria-required="true" id="select-doctor" name="targetDoctor" aria-label="Target Doctor or Clinic">
-                  <option value="GAB...DR_SMITH_OPTOMETRY">Dr. Smith Optometry Clinic (Authorized)</option>
-                  <option value="GCD...VISION_RESEARCH_LAB">Vision Research Lab (Pending)</option>
-                  <option value="GXX...UNAUTHORIZED_THIRD_PARTY">Unauthorized Provider (Block)</option>
+                <label class="form-label" for="select-doctor" data-i18n="demo.targetDoctor">Target Doctor / Clinic</label>
+                <select class="form-select" required aria-required="true" id="select-doctor" name="targetDoctor" aria-label="Target Doctor or Clinic" data-i18n-aria-label="demo.targetDoctor">
+                  <option value="GAB...DR_SMITH_OPTOMETRY" data-i18n="demo.doctorAuthorized">Dr. Smith Optometry Clinic (Authorized)</option>
+                  <option value="GCD...VISION_RESEARCH_LAB" data-i18n="demo.doctorPending">Vision Research Lab (Pending)</option>
+                  <option value="GXX...UNAUTHORIZED_THIRD_PARTY" data-i18n="demo.doctorBlocked">Unauthorized Provider (Block)</option>
                 </select>
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="dur-slider">Grant Duration: <span id="dur-val">24</span> Hours</label>
+                <label class="form-label" for="dur-slider"><span data-i18n="demo.grantDuration">Grant Duration:</span> <span id="dur-val">24</span> <span data-i18n="demo.hours">Hours</span></label>
                 <input type="range" class="slider-input" min="1" max="168" value="24" id="dur-slider" name="durationHours" aria-label="Grant Duration in Hours" aria-valuemin="1" aria-valuemax="168" aria-valuenow="24" aria-valuetext="24 Hours">
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-grant-access" aria-label="Execute Soroban Authentication">Execute Soroban Auth</button>
+              <button type="submit" class="btn btn-primary" id="btn-grant-access" aria-label="Execute Soroban Authentication" data-i18n="demo.executeAuth">Execute Soroban Auth</button>
             </form>
 
             <div class="code-console">
               <div class="console-header">
-                <span>SOROBAN CONTRACT EXECUTION LOG</span>
-                <span>• LIVE STATE</span>
+                <span data-i18n="demo.rbacConsoleTitle">SOROBAN CONTRACT EXECUTION LOG</span>
+                <span data-i18n="demo.consoleLive">• LIVE STATE</span>
               </div>
               <pre id="preview-rbac-code">// Soroban Call: contracts/vision_records::grant_access()
 fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
@@ -283,26 +286,26 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
           <!-- Panel 2: ZK Proof -->
           <div class="demo-tab-panel" id="panel-zk">
             <form class="control-panel" aria-label="Zero-Knowledge Medical Proof Generator Form">
-              <h3>Zero-Knowledge Medical Proof Generator</h3>
-              <p style="color: var(--text-muted); font-size: 0.9rem;">Generate a groth16 proof for driver's license visual acuity standards without revealing patient identity.</p>
+              <h3 data-i18n="demo.zkTitle">Zero-Knowledge Medical Proof Generator</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem;" data-i18n="demo.zkDesc">Generate a groth16 proof for driver's license visual acuity standards without revealing patient identity.</p>
               
               <div class="form-group">
-                <label class="form-label" for="acuity-slider">Patient Visual Acuity: <span id="acuity-val">20/20</span></label>
+                <label class="form-label" for="acuity-slider"><span data-i18n="demo.acuityLabel">Patient Visual Acuity:</span> <span id="acuity-val">20/20</span></label>
                 <input type="range" class="slider-input" min="15" max="60" value="20" id="acuity-slider" name="acuityScore" aria-label="Patient Visual Acuity Score" aria-valuemin="15" aria-valuemax="60" aria-valuenow="20" aria-valuetext="20/20">
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="input-acuity-threshold">Required Threshold</label>
-                <input type="text" id="input-acuity-threshold" name="acuityThreshold" class="form-input" value="Visual Acuity <= 20/40 (Driver Standard)" required aria-required="true" aria-label="Required Visual Acuity Threshold">
+                <label class="form-label" for="input-acuity-threshold" data-i18n="demo.thresholdLabel">Required Threshold</label>
+                <input type="text" id="input-acuity-threshold" name="acuityThreshold" class="form-input" value="Visual Acuity <= 20/40 (Driver Standard)" required aria-required="true" aria-label="Required Visual Acuity Threshold" data-i18n-aria-label="demo.thresholdLabel" data-i18n-value="demo.thresholdValue">
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-gen-zk" aria-label="Generate Groth16 zk-SNARK Proof">Generate Groth16 zk-SNARK</button>
+              <button type="submit" class="btn btn-primary" id="btn-gen-zk" aria-label="Generate Groth16 zk-SNARK Proof" data-i18n="demo.generateProof">Generate Groth16 zk-SNARK</button>
             </form>
 
             <div class="code-console">
               <div class="console-header">
-                <span>ZK_VERIFIER OUTPUT</span>
-                <span>PROOF READY</span>
+                <span data-i18n="demo.zkConsoleTitle">ZK_VERIFIER OUTPUT</span>
+                <span data-i18n="demo.zkConsoleStatus">PROOF READY</span>
               </div>
               <pre id="preview-zk-code">{
   "circuit": "contracts/zk_verifier::visual_acuity_proof",
@@ -317,24 +320,24 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
           <!-- Panel 3: AI Oracle -->
           <div class="demo-tab-panel" id="panel-ai">
             <form class="control-panel" aria-label="AI Oracle Provider Rotation Form">
-              <h3>AI Oracle Provider Rotation</h3>
-              <p style="color: var(--text-muted); font-size: 0.9rem;">Simulate SLA timeout on the primary oracle node to verify automated failover.</p>
+              <h3 data-i18n="demo.aiTitle">AI Oracle Provider Rotation</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem;" data-i18n="demo.aiDesc">Simulate SLA timeout on the primary oracle node to verify automated failover.</p>
               
               <div class="form-group">
-                <label class="form-label" for="select-ai-status">Primary Oracle Node Status</label>
-                <select class="form-select" required aria-required="true" id="select-ai-status" name="aiStatus" aria-label="Primary Oracle Node Status">
-                  <option value="healthy">Primary Oracle (Active — 100% Uptime)</option>
-                  <option value="timeout">Primary Oracle Failed (500ms Timeout Exceeded)</option>
+                <label class="form-label" for="select-ai-status" data-i18n="demo.aiStatusLabel">Primary Oracle Node Status</label>
+                <select class="form-select" required aria-required="true" id="select-ai-status" name="aiStatus" aria-label="Primary Oracle Node Status" data-i18n-aria-label="demo.aiStatusLabel">
+                  <option value="healthy" data-i18n="demo.aiHealthy">Primary Oracle (Active — 100% Uptime)</option>
+                  <option value="timeout" data-i18n="demo.aiTimeout">Primary Oracle Failed (500ms Timeout Exceeded)</option>
                 </select>
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-test-ai" aria-label="Simulate Diagnostic Request">Simulate Diagnostic Request</button>
+              <button type="submit" class="btn btn-primary" id="btn-test-ai" aria-label="Simulate Diagnostic Request" data-i18n="demo.simulateDiagnostic">Simulate Diagnostic Request</button>
             </form>
 
             <div class="code-console">
               <div class="console-header">
-                <span>AI_INTEGRATION ROTATION LOG</span>
-                <span>SLA MONITORED</span>
+                <span data-i18n="demo.aiConsoleTitle">AI_INTEGRATION ROTATION LOG</span>
+                <span data-i18n="demo.aiConsoleStatus">SLA MONITORED</span>
               </div>
               <pre id="preview-ai-code">[AI_INTEGRATION] Primary Provider Active: "AI_Vision_Alpha" (Weight: 100)
 [ORACLE_CALL] Processing Retinal Scan CID: ipfs://QmX9z...
@@ -346,24 +349,24 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
           <!-- Panel 4: FHIR Converter -->
           <div class="demo-tab-panel" id="panel-fhir">
             <form class="control-panel" aria-label="FHIR v4 Clinical Record Converter Form">
-              <h3>FHIR v4 Clinical Record Converter</h3>
-              <p style="color: var(--text-muted); font-size: 0.9rem;">Map Soroban contract structs into international FHIR v4 JSON records.</p>
+              <h3 data-i18n="demo.fhirTitle">FHIR v4 Clinical Record Converter</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem;" data-i18n="demo.fhirDesc">Map Soroban contract structs into international FHIR v4 JSON records.</p>
               
               <div class="form-group">
-                <label class="form-label" for="select-fhir-type">Record Type</label>
-                <select class="form-select" required aria-required="true" id="select-fhir-type" name="recordType" aria-label="Clinical Record Type">
-                  <option value="refraction">Optometric Refraction Exam</option>
-                  <option value="iop">Intraocular Pressure (IOP)</option>
+                <label class="form-label" for="select-fhir-type" data-i18n="demo.recordType">Record Type</label>
+                <select class="form-select" required aria-required="true" id="select-fhir-type" name="recordType" aria-label="Clinical Record Type" data-i18n-aria-label="demo.recordType">
+                  <option value="refraction" data-i18n="demo.recordRefraction">Optometric Refraction Exam</option>
+                  <option value="iop" data-i18n="demo.recordIop">Intraocular Pressure (IOP)</option>
                 </select>
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-convert-fhir" aria-label="Generate FHIR v4 Payload">Generate FHIR v4 Payload</button>
+              <button type="submit" class="btn btn-primary" id="btn-convert-fhir" aria-label="Generate FHIR v4 Payload" data-i18n="demo.generateFhir">Generate FHIR v4 Payload</button>
             </form>
 
             <div class="code-console">
               <div class="console-header">
-                <span>FHIR_V4_CONVERTER JSON</span>
-                <span>LOINC VALIDATED</span>
+                <span data-i18n="demo.fhirConsoleTitle">FHIR_V4_CONVERTER JSON</span>
+                <span data-i18n="demo.fhirConsoleStatus">LOINC VALIDATED</span>
               </div>
               <pre id="preview-fhir-code">{
   "resourceType": "DiagnosticReport",
@@ -383,25 +386,25 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
           <!-- Panel 5: Clinical Data Fetching Placeholder -->
           <div class="demo-tab-panel" id="panel-fetch">
             <form class="control-panel" aria-label="Clinical Data Retrieval Form">
-              <h3>Clinical Data Retrieval</h3>
-              <p style="color: var(--text-muted); font-size: 0.9rem;">Simulate fetching patient data from the decentralized storage network.</p>
+              <h3 data-i18n="demo.fetchTitle">Clinical Data Retrieval</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem;" data-i18n="demo.fetchDesc">Simulate fetching patient data from the decentralized storage network.</p>
               
               <div class="form-group">
-                <label class="form-label" for="input-patient-cid">Query Patient CID</label>
-                <input type="text" id="input-patient-cid" name="patientCid" class="form-input" value="ipfs://QmX9z82...PATIENT_RECORDS" required aria-required="true" aria-label="Query Patient CID">
+                <label class="form-label" for="input-patient-cid" data-i18n="demo.queryCid">Query Patient CID</label>
+                <input type="text" id="input-patient-cid" name="patientCid" class="form-input" value="ipfs://QmX9z82...PATIENT_RECORDS" required aria-required="true" aria-label="Query Patient CID" data-i18n-aria-label="demo.queryCid">
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-fetch-data" aria-label="Fetch Clinical Data">Fetch Clinical Data</button>
+              <button type="submit" class="btn btn-primary" id="btn-fetch-data" aria-label="Fetch Clinical Data" data-i18n="demo.fetchButton">Fetch Clinical Data</button>
             </form>
 
             <div class="code-console" style="min-height: 250px;">
               <div class="console-header">
-                <span id="fetch-status-label">DATA_RETRIEVAL IDLE</span>
-                <span id="fetch-status-indicator">AWAITING_REQUEST</span>
+                <span id="fetch-status-label" data-i18n="demo.fetchConsoleIdle">DATA_RETRIEVAL IDLE</span>
+                <span id="fetch-status-indicator" data-i18n="demo.fetchConsoleAwaiting">AWAITING_REQUEST</span>
               </div>
               
               <div id="fetch-idle" style="padding-top: 1rem;">
-                <p style="color: var(--text-muted); font-style: italic; font-size: 0.9rem;">Click "Fetch Clinical Data" to simulate a decentralized network retrieval...</p>
+                <p style="color: var(--text-muted); font-style: italic; font-size: 0.9rem;" data-i18n="demo.fetchHint">Click "Fetch Clinical Data" to simulate a decentralized network retrieval...</p>
               </div>
 
               <!-- Placeholder Skeleton UI (Loading State) -->
@@ -415,9 +418,9 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
               <!-- Result State -->
               <div id="fetch-result-container" style="display: none; padding-top: 0.5rem;">
                 <div style="display: flex; gap: 12px; margin-bottom: 1rem;">
-                  <span class="health-status-badge verified">Verified</span>
-                  <span class="health-status-badge pending">Syncing</span>
-                  <span class="health-status-badge archived">Archived</span>
+                  <span class="health-status-badge verified" data-i18n="demo.statusVerified">Verified</span>
+                  <span class="health-status-badge pending" data-i18n="demo.statusSyncing">Syncing</span>
+                  <span class="health-status-badge archived" data-i18n="demo.statusArchived">Archived</span>
                 </div>
                 <pre id="preview-fetch-code">{
   "status": "SUCCESS",
@@ -440,73 +443,18 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
   <section class="modules-section" id="contracts">
     <div class="container">
       <div class="section-header" data-aos="fade-up">
-        <h2 class="section-title">Core Smart Contract Modules</h2>
-        <p class="section-desc">25 WASM smart contracts compiled in Rust and deployed on Soroban.</p>
+        <h2 class="section-title" data-i18n="contracts.title">Core Smart Contract Modules</h2>
+        <p class="section-desc" data-i18n="contracts.desc">All 24 workspace contracts compiled in Rust for Soroban, with deployment status, testnet addresses, and direct source links.</p>
       </div>
 
-      <div class="contract-grid">
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="100">
-          <span class="card-badge">contracts/vision_records</span>
-          <h3 class="card-title">Vision Records</h3>
-          <p class="card-desc">Patient health history, refraction parameters, and role permissions (`require_auth()`).</p>
-          <contract-address-display address="CVISIONREC77RETINAXOPHTHALMOLOGYEHRRECORDDATA000004"></contract-address-display>
-        </div>
+      <!-- Category filters are rendered by components/contract-grid.js -->
+      <div class="contract-filters" id="contract-filters" role="group" aria-label="Filter contracts by category" data-i18n-aria-label="contracts.filterLabel"></div>
+      <p class="contract-result-count" id="contract-result-count" aria-live="polite"></p>
 
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="120">
-          <span class="card-badge">contracts/identity</span>
-          <h3 class="card-title">Identity & Enclave</h3>
-          <p class="card-desc">Patient identity enclave, role management, and credential verification.</p>
-          <contract-address-display address="CIDENTITY99RETINAXPATIENTIDPROVIDERENCLAVEAUTH000002"></contract-address-display>
-        </div>
-
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="140">
-          <span class="card-badge">contracts/key_manager</span>
-          <h3 class="card-title">Key Manager</h3>
-          <p class="card-desc">Ephemeral rotation, delegation keys, and cryptographic secret governance.</p>
-          <contract-address-display address="CKEYMGR88RETINAXEPHEMERALROTATIONDELEGATIONKEY000003"></contract-address-display>
-        </div>
-
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="160">
-          <span class="card-badge">contracts/audit</span>
-          <h3 class="card-title">Audit Trail</h3>
-          <p class="card-desc">Immutable on-chain access logs, tamper-proof compliance proofs, and event verification.</p>
-          <contract-address-display address="CAUDIT7XX4M5K6RETINAXAUDITTRAIL2026PROTOCOLLOGGER00001"></contract-address-display>
-        </div>
-
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="180">
-          <span class="card-badge">contracts/zk_verifier</span>
-          <h3 class="card-title">ZK Verifier</h3>
-          <p class="card-desc">Groth16 zk-SNARK verification engine for anonymous eligibility proofs.</p>
-          <contract-address-display address="CZKVERIFY66RETINAXGROTH16SNARKPROOFENGINE0000005"></contract-address-display>
-        </div>
-
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="200">
-          <span class="card-badge">contracts/ai_integration</span>
-          <h3 class="card-title">AI Integrator</h3>
-          <p class="card-desc">Automated provider failover and weight rotation oracle for AI diagnostics.</p>
-          <contract-address-display address="CAIORACLE55RETINAXDIAGNOSTICORACLEROTATION000006"></contract-address-display>
-        </div>
-
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="220">
-          <span class="card-badge">contracts/cross_chain</span>
-          <h3 class="card-title">Cross-Chain Bridge</h3>
-          <p class="card-desc">Merkle proof validation and refund resilience flows across networks.</p>
-        </div>
-
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="240">
-          <span class="card-badge">contracts/fhir</span>
-          <h3 class="card-title">FHIR & EMR Bridge</h3>
-          <p class="card-desc">Bidirectional mapping to international FHIR v4 and LOINC clinical standards.</p>
-          <contract-address-display address="CFHIRV4MAP44RETINAXEMRBRIDGELOINCDATACONVERT0000007"></contract-address-display>
-        </div>
-
-        <div class="contract-card" data-aos="fade-up" data-aos-delay="260">
-          <span class="card-badge">contracts/compliance</span>
-          <h3 class="card-title">Compliance Protocol</h3>
-          <p class="card-desc">GDPR Art. 25 data transit policy enforcement and HIPAA tracking.</p>
-          <contract-address-display address="CCOMPLIANCE33RETINAXGDPRHIPAATRANSITPOLICY000008"></contract-address-display>
-        </div>
-      </div>
+      <div class="contract-grid" id="contract-grid" data-contract-grid></div>
+      <noscript>
+        <p class="contract-grid__noscript" data-i18n="contracts.noscript">Enable JavaScript to browse the full contract registry.</p>
+      </noscript>
     </div>
   </section>
 
@@ -514,8 +462,8 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
   <section class="repo-avatar-section" aria-labelledby="repo-avatar-heading">
     <div class="container">
       <div class="section-header" data-aos="fade-up">
-        <h2 class="section-title" id="repo-avatar-heading">Open Source on GitHub</h2>
-        <p class="section-desc">RetinaX is fully open-source under the MIT License. Explore the contracts, contribute issues, or fork the protocol.</p>
+        <h2 class="section-title" id="repo-avatar-heading" data-i18n="repo.title">Open Source on GitHub</h2>
+        <p class="section-desc" data-i18n="repo.desc">RetinaX is fully open-source under the MIT License. Explore the contracts, contribute issues, or fork the protocol.</p>
       </div>
 
       <!-- RepoAvatar Card (auto-initialised by repo-avatar.js) -->
@@ -551,82 +499,82 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
     <div class="container">
       <div class="footer-grid">
         <div class="footer-brand">
-          <a href="#" class="brand-logo" aria-label="RetinaX Protocol Home">
+          <a href="#" class="brand-logo" aria-label="RetinaX Protocol Home" data-i18n-aria-label="nav.brandAria">
             <img src="assets/logo.jpg" alt="RetinaX Logo" class="logo-img">
             <span class="brand-text">RetinaX</span>
           </a>
-          <p>Decentralized, privacy-preserving vision care records protocol and AI diagnostic verification ecosystem on Stellar.</p>
+          <p data-i18n="footer.brandDesc">Decentralized, privacy-preserving vision care records protocol and AI diagnostic verification ecosystem on Stellar.</p>
         </div>
 
         <nav class="footer-col" aria-label="Protocol navigation">
-          <h4>Protocol</h4>
+          <h4 data-i18n="footer.protocolTitle">Protocol</h4>
           <ul class="footer-links">
-            <li><a href="#overview" aria-label="Navigate to Overview section">Overview</a></li>
-            <li><a href="#privacy" aria-label="Navigate to ZK Privacy section">ZK Privacy</a></li>
-            <li><a href="#ai-oracle" aria-label="Navigate to AI Oracle section">AI Oracle</a></li>
-            <li><a href="#demo" aria-label="Navigate to Playground Demo section">Playground</a></li>
+            <li><a href="#overview" aria-label="Navigate to Overview section" data-i18n-aria-label="footer.overviewAria" data-i18n="footer.overview">Overview</a></li>
+            <li><a href="#privacy" aria-label="Navigate to ZK Privacy section" data-i18n-aria-label="footer.privacyAria" data-i18n="footer.privacy">ZK Privacy</a></li>
+            <li><a href="#ai-oracle" aria-label="Navigate to AI Oracle section" data-i18n-aria-label="footer.aiOracleAria" data-i18n="footer.aiOracle">AI Oracle</a></li>
+            <li><a href="#demo" aria-label="Navigate to Playground Demo section" data-i18n-aria-label="footer.playgroundAria" data-i18n="footer.playground">Playground</a></li>
           </ul>
         </nav>
 
         <nav class="footer-col" aria-label="Ecosystem links">
-          <h4>Ecosystem</h4>
+          <h4 data-i18n="footer.ecosystemTitle">Ecosystem</h4>
           <ul class="footer-links">
-            <li><a href="https://github.com/RetinaX-Org/RetinaX" target="_blank" rel="noopener noreferrer" aria-label="GitHub Organization (opens in new tab)">GitHub Organization</a></li>
-            <li><a href="https://github.com/RetinaX-Org/RetinaX/discussions" target="_blank" rel="noopener noreferrer">Community Discussions</a></li>
-            <li><a href="https://grantfox.xyz" target="_blank" rel="noopener noreferrer" aria-label="GrantFox Grants (opens in new tab)">GrantFox Grants</a></li>
-            <li><a href="https://soroban.stellar.org/" target="_blank" rel="noopener noreferrer" aria-label="Stellar Soroban Documentation (opens in new tab)">Stellar Soroban</a></li>
+            <li><a href="https://github.com/RetinaX-Org/RetinaX" target="_blank" rel="noopener noreferrer" aria-label="GitHub Organization (opens in new tab)" data-i18n-aria-label="footer.githubOrgAria" data-i18n="footer.githubOrg">GitHub Organization</a></li>
+            <li><a href="https://github.com/RetinaX-Org/RetinaX/discussions" target="_blank" rel="noopener noreferrer" data-i18n="footer.discussions">Community Discussions</a></li>
+            <li><a href="https://grantfox.xyz" target="_blank" rel="noopener noreferrer" aria-label="GrantFox Grants (opens in new tab)" data-i18n-aria-label="footer.grantfoxAria" data-i18n="footer.grantfox">GrantFox Grants</a></li>
+            <li><a href="https://soroban.stellar.org/" target="_blank" rel="noopener noreferrer" aria-label="Stellar Soroban Documentation (opens in new tab)" data-i18n-aria-label="footer.sorobanAria" data-i18n="footer.soroban">Stellar Soroban</a></li>
           </ul>
         </nav>
 
         <nav class="footer-col" aria-label="Open Source links">
-          <h4>Open Source</h4>
+          <h4 data-i18n="footer.openSourceTitle">Open Source</h4>
           <ul class="footer-links">
-            <li><a href="https://github.com/RetinaX-Org/RetinaX/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" aria-label="MIT License (opens in new tab)">MIT License</a></li>
-            <li><a href="https://github.com/RetinaX-Org/RetinaX/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" aria-label="Contributing Guide (opens in new tab)">Contributing Guide</a></li>
-            <li><a href="https://github.com/RetinaX-Org/RetinaX/issues" target="_blank" rel="noopener noreferrer" aria-label="Roadmap and Issues on GitHub (opens in new tab)">Roadmap Issues</a></li>
+            <li><a href="https://github.com/RetinaX-Org/RetinaX/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" aria-label="MIT License (opens in new tab)" data-i18n-aria-label="footer.licenseAria" data-i18n="footer.license">MIT License</a></li>
+            <li><a href="https://github.com/RetinaX-Org/RetinaX/blob/main/CONTRIBUTING.md" target="_blank" rel="noopener noreferrer" aria-label="Contributing Guide (opens in new tab)" data-i18n-aria-label="footer.contributingAria" data-i18n="footer.contributing">Contributing Guide</a></li>
+            <li><a href="https://github.com/RetinaX-Org/RetinaX/issues" target="_blank" rel="noopener noreferrer" aria-label="Roadmap and Issues on GitHub (opens in new tab)" data-i18n-aria-label="footer.roadmapAria" data-i18n="footer.roadmap">Roadmap Issues</a></li>
           </ul>
         </nav>
       </div>
 
       <div class="footer-bottom">
-        <span>© <span id="copyright-year">2026</span> RetinaX Protocol. Licensed under MIT.</span>
-        <span>Built with ❤️ on Stellar & Soroban</span>
+        <span><span data-i18n="footer.copyrightPrefix">©</span> <span id="copyright-year">2026</span> <span data-i18n="footer.copyrightSuffix">RetinaX Protocol. Licensed under MIT.</span></span>
+        <span data-i18n="footer.builtWith">Built with ❤️ on Stellar & Soroban</span>
       </div>
     </div>
   </footer>
 
   <!-- Modal Base (<modal-dialog> Custom Web Component) -->
-  <modal-dialog id="connect-wallet-dialog" title="Connect Wallet" size="sm">
+  <modal-dialog id="connect-wallet-dialog" title="Connect Wallet" data-i18n-title="wallet.title" size="sm">
     <div class="wallet-option" onclick="alert('Simulated: Connecting Freighter...')">
       <div class="wallet-info">
         <div class="wallet-icon">F</div>
-        <span class="wallet-name">Freighter Wallet</span>
+        <span class="wallet-name" data-i18n="wallet.freighter">Freighter Wallet</span>
       </div>
-      <span class="wallet-badge">Recommended</span>
+      <span class="wallet-badge" data-i18n="wallet.recommended">Recommended</span>
     </div>
     <div class="wallet-option" onclick="alert('Simulated: Connecting Albedo...')">
       <div class="wallet-info">
         <div class="wallet-icon">A</div>
-        <span class="wallet-name">Albedo</span>
+        <span class="wallet-name" data-i18n="wallet.albedo">Albedo</span>
       </div>
     </div>
     <div class="wallet-option" onclick="alert('Simulated: Connecting xBull...')">
       <div class="wallet-info">
         <div class="wallet-icon">x</div>
-        <span class="wallet-name">xBull Wallet</span>
+        <span class="wallet-name" data-i18n="wallet.xbull">xBull Wallet</span>
       </div>
     </div>
-    <p class="modal-footer-text">New to Stellar? <a href="https://stellar.org/ecosystem/wallets" target="_blank">Learn more about wallets</a></p>
+    <p class="modal-footer-text"><span data-i18n="wallet.newToStellar">New to Stellar?</span> <a href="https://stellar.org/ecosystem/wallets" target="_blank" data-i18n="wallet.learnMore">Learn more about wallets</a></p>
   </modal-dialog>
 
   <!-- Global Loading Spinner -->
-  <global-spinner id="global-spinner" message="Processing..."></global-spinner>
+  <global-spinner id="global-spinner" message="Processing..." data-i18n-message="common.processing"></global-spinner>
 
   <!-- Reusable Protocol Popup Dialog -->
-  <modal-dialog id="info-dialog" title="RetinaX Protocol Details" size="md">
-    <p>RetinaX standardizes clinical vision records on Stellar using WASM smart contracts and Groth16 zero-knowledge proofs.</p>
+  <modal-dialog id="info-dialog" title="RetinaX Protocol Details" data-i18n-title="wallet.infoTitle" size="md">
+    <p data-i18n="wallet.infoBody">RetinaX standardizes clinical vision records on Stellar using WASM smart contracts and Groth16 zero-knowledge proofs.</p>
     <div style="margin-top: 1rem; padding: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 8px; border: 1px solid var(--border-color);">
-      <small style="color: var(--text-muted);">LOINC Standard: 28886-0 | FHIR Version: v4.0.1</small>
+      <small style="color: var(--text-muted);" data-i18n="wallet.loinc">LOINC Standard: 28886-0 | FHIR Version: v4.0.1</small>
     </div>
   </modal-dialog>
 
@@ -651,6 +599,10 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
   <!-- RepoAvatar Standalone Component -->
   <script src="components/repo-avatar.js"></script>
   <script src="components/contract-address-display.js"></script>
+
+  <!-- i18n Loader & Contract Registry Grid -->
+  <script src="i18n/loader.js"></script>
+  <script src="components/contract-grid.js"></script>
 
   <!-- Connect Wallet Button Component -->
   <script src="components/connect-wallet.js"></script>
