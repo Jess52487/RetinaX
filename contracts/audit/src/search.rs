@@ -43,7 +43,7 @@
 /// where k = number of keywords per entry, m = number of matching entries.
 use alloc::{collections::BTreeMap, vec::Vec};
 
-use hmac::{Hmac, Mac};
+use hmac::{Hmac, KeyInit, Mac};
 use sha2::Sha256;
 
 use crate::types::AuditError;
@@ -85,7 +85,7 @@ impl SearchKey {
     ///
     /// Complexity: O(|keyword|) — single HMAC call.
     pub fn token_for(&self, keyword: &str) -> SearchToken {
-        let mut mac = <Hmac<Sha256> as Mac>::new_from_slice(&self.0)
+        let mut mac = <Hmac<Sha256> as KeyInit>::new_from_slice(&self.0)
             .expect("HMAC accepts any key length ≥ 0");
         mac.update(keyword.as_bytes());
         mac.finalize().into_bytes().into()

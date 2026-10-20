@@ -7,6 +7,7 @@
 
 extern crate std;
 
+use access_control::{AccessControlContract, AccessControlContractClient, Role};
 use clinical_records::{
     ClinicalRecordsContract, ClinicalRecordsContractClient, ContractError, EyeExamination,
     FundusPhotography, IntraocularPressure, LensType, OptFundusPhotography, OptPhysicalMeasurement,
@@ -14,6 +15,7 @@ use clinical_records::{
     RetinalImaging, SlitLampFindings, VisualAcuity, VisualField,
 };
 use soroban_sdk::{
+    testutils::Address as _,
     testutils::{Address as _, Events as _},
     Address, Env, String,
 };
@@ -32,7 +34,7 @@ fn setup_clinical() -> (
 
     let contract_id = env.register(ClinicalRecordsContract, ());
     let client = ClinicalRecordsContractClient::new(&env, &contract_id);
-    client.initialize(&admin, &vision_records);
+    client.initialize(&admin, &vision_records, &None);
 
     (env, client, admin, vision_records)
 }
@@ -104,7 +106,7 @@ fn test_initialization_lifecycle_and_admin_config() {
     let vision_records = Address::generate(&env);
 
     // Initial configuration succeeds
-    let init_res = client.try_initialize(&admin, &vision_records);
+    let init_res = client.try_initialize(&admin, &vision_records, &None);
     assert!(init_res.is_ok());
 
     assert_eq!(client.get_admin(), admin);
@@ -114,7 +116,7 @@ fn test_initialization_lifecycle_and_admin_config() {
     );
 
     // Duplicate initialization must return AlreadyInitialized
-    let dup_init = client.try_initialize(&admin, &vision_records);
+    let dup_init = client.try_initialize(&admin, &vision_records, &None);
     assert_eq!(dup_init, Err(Ok(ContractError::AlreadyInitialized)));
 
     // Admin updates vision_records contract address
@@ -508,3 +510,154 @@ fn test_events_emission_on_all_state_changing_operations() {
     assert_eq!(rbk_data.rx_id, rx_id_2);
     assert_eq!(rbk_data.caller, vision_records);
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 5. Access Control (RBAC) Integration Tests
+// ─────────────────────────────────────────────────────────────────────────────
+
+fn setup_clinical_with_access_control() -> (
+    Env,
+    ClinicalRecordsContractClient<'static>,
+    AccessControlContractClient<'static>,
+    Address,
+    Address,
+    Address,
+    Address,
+    Address,
+) {
+    let env = Env::default();
+    env.mock_all_auths();
+
+    let admin = Address::generate(&env);
+    let vision_records = Address::generate(&env);
+    let doctor = Address::generate(&env);
+    let patient = Address::generate(&env);
+    let unauthorized = Address::generate(&env);
+
+    let ac_id = env.register(AccessControlContract, ());
+    let ac_client = AccessControlContractClient::new(&env, &ac_id);
+    ac_client.initialize(&admin);
+
+    // Assign Optometrist role to doctor (gives WriteRecord + ReadAnyRecord)
+    ac_client.assign_role(&admin, &doctor, &Role::Optometrist, &0);
+    // Assign Patient role to patient (no global WriteRecord or ReadAnyRecord)
+    ac_client.assign_role(&admin, &patient, &Role::Patient, &0);
+
+    let cr_id = env.register(ClinicalRecordsContract, ());
+    let cr_client = ClinicalRecordsContractClient::new(&env, &cr_id);
+    cr_client.initialize(&admin, &vision_records, &Some(ac_id.clone()));
+
+    (env, cr_client, ac_client, admin, vision_records, doctor, patient, unauthorized)
+}
+
+#[test]
+fn test_access_control_rbac_eye_examination() {
+    let (env, client, _, _admin, _, doctor, patient, unauthorized) =
+        setup_clinical_with_access_control();
+    let record_id = 5001u64;
+
+    let visual_acuity = sample_visual_acuity_uncorrected_only(&env);
+    let iop = sample_iop(&env);
+    let slit_lamp = sample_slit_lamp(&env);
+    let notes = String::from_str(&env, "Routine diabetic eye check");
+
+    // 1. Caller with WriteRecord (doctor) can add eye examination
+    let add_res = client.try_add_eye_examination(
+        &doctor,
+        &record_id,
+        &visual_acuity,
+        &iop,
+        &slit_lamp,
+        &OptVisualField::None,
+        &OptRetinalImaging::None,
+        &OptFundusPhotography::None,
+        &notes,
+    );
+    assert!(add_res.is_ok());
+
+    // Associate patient with this examination
+    client.set_examination_patient(&doctor, &record_id, &patient);
+
+    // 2. Caller without WriteRecord cannot add eye examination
+    let unauth_add = client.try_add_eye_examination(
+        &unauthorized,
+        &5002u64,
+        &visual_acuity,
+        &iop,
+        &slit_lamp,
+        &OptVisualField::None,
+        &OptRetinalImaging::None,
+        &OptFundusPhotography::None,
+        &notes,
+    );
+    assert_eq!(unauth_add, Err(Ok(ContractError::Unauthorized)));
+
+    // 3. Caller with ReadAnyRecord (doctor) can read examination
+    let doc_read = client.get_eye_examination(&doctor, &record_id);
+    assert_eq!(doc_read.record_id, record_id);
+
+    // 4. Patient of this examination can read examination
+    let pat_read = client.get_eye_examination(&patient, &record_id);
+    assert_eq!(pat_read.record_id, record_id);
+
+    // 5. Unauthorized caller (neither ReadAnyRecord nor the patient) is rejected
+    let unauth_read = client.try_get_eye_examination(&unauthorized, &record_id);
+    assert_eq!(unauth_read, Err(Ok(ContractError::Unauthorized)));
+}
+
+#[test]
+fn test_access_control_rbac_prescription() {
+    let (env, client, _, _admin, _, doctor, patient, unauthorized) =
+        setup_clinical_with_access_control();
+
+    let rx_data = PrescriptionData {
+        sphere: String::from_str(&env, "-1.50"),
+        cylinder: String::from_str(&env, "-0.25"),
+        axis: String::from_str(&env, "180"),
+        add: String::from_str(&env, "+1.50"),
+        pd: String::from_str(&env, "63"),
+    };
+
+    // 1. Caller with WriteRecord (doctor) can prepare prescription
+    let rx_id = client.prepare_add_prescription(&doctor, &patient, &doctor, &rx_data);
+
+    // 2. Caller without WriteRecord cannot prepare prescription
+    let unauth_prep = client.try_prepare_add_prescription(&unauthorized, &patient, &doctor, &rx_data);
+    assert_eq!(unauth_prep, Err(Ok(ContractError::Unauthorized)));
+
+    // 3. Caller with WriteRecord can commit prescription
+    let commit_res = client.try_commit_add_prescription(&doctor, &rx_id);
+    assert!(commit_res.is_ok());
+
+    // 4. Caller with ReadAnyRecord (doctor) can read prescription
+    let doc_rx = client.get_prescription(&doctor, &rx_id);
+    assert_eq!(doc_rx.id, rx_id);
+    assert_eq!(doc_rx.patient, patient);
+
+    // 5. Prescription patient can read their own prescription
+    let pat_rx = client.get_prescription(&patient, &rx_id);
+    assert_eq!(pat_rx.id, rx_id);
+
+    // 6. Unauthorized caller cannot read prescription
+    let unauth_read = client.try_get_prescription(&unauthorized, &rx_id);
+    assert_eq!(unauth_read, Err(Ok(ContractError::Unauthorized)));
+}
+
+#[test]
+fn test_access_control_configuration_and_updates() {
+    let (env, client, ac_client, admin, _, doctor, _, unauthorized) =
+        setup_clinical_with_access_control();
+
+    assert_eq!(client.get_access_control_contract(), Some(ac_client.address.clone()));
+
+    // Admin updates access control contract address
+    let new_ac = Address::generate(&env);
+    let update_res = client.try_set_access_control_contract(&admin, &new_ac);
+    assert!(update_res.is_ok());
+    assert_eq!(client.get_access_control_contract(), Some(new_ac));
+
+    // Non-admin cannot update access control contract address
+    let unauth_update = client.try_set_access_control_contract(&doctor, &unauthorized);
+    assert_eq!(unauth_update, Err(Ok(ContractError::Unauthorized)));
+}
+

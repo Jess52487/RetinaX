@@ -1,0 +1,238 @@
+/* ==========================================================================
+   ExaminationViewer — styles
+   Uses RetinaX design tokens from base.css, with fallbacks so the
+   component still renders when loaded on its own.
+   ========================================================================== */
+
+examination-viewer {
+  display: block;
+  font-family: var(--font-sans, 'Plus Jakarta Sans', 'Inter', sans-serif);
+  color: var(--text-main, #0f172a);
+}
+
+.examination-viewer__inner {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: var(--radius-md, 10px);
+  background: var(--bg-surface, #ffffff);
+  box-shadow: var(--shadow-sm, 0 1px 3px rgba(15, 23, 42, 0.05));
+}
+
+.examination-viewer__section {
+  min-width: 0;
+}
+
+.examination-viewer__heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--clinical-navy, #1e293b);
+}
+
+.examination-viewer__note,
+.examination-viewer__empty {
+  margin: 0 0 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-muted, #475569);
+}
+
+.examination-viewer__notes {
+  margin: 0;
+  white-space: pre-wrap;
+  line-height: 1.5;
+}
+
+/* --- Visual acuity table ------------------------------------------------- */
+
+.examination-viewer__table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.examination-viewer__table th,
+.examination-viewer__table td {
+  padding: 0.5rem 0.6rem;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  text-align: left;
+}
+
+.examination-viewer__table thead th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-light, #64748b);
+}
+
+.examination-viewer__table tbody th {
+  font-weight: 600;
+}
+
+.examination-viewer__table td {
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+}
+
+/* --- Intraocular pressure ----------------------------------------------- */
+
+.examination-viewer__iop-row {
+  display: grid;
+  grid-template-columns: 5.5rem 4.5rem 1fr;
+  grid-template-areas:
+    'eye value badge'
+    'track track track';
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+}
+
+.examination-viewer__iop-row:last-child {
+  border-bottom: 0;
+}
+
+.examination-viewer__iop-eye {
+  grid-area: eye;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.examination-viewer__iop-value {
+  grid-area: value;
+  font-family: var(--font-mono, ui-monospace, Menlo, Consolas, monospace);
+  font-size: 0.85rem;
+}
+
+.examination-viewer__iop-track {
+  grid-area: track;
+  position: relative;
+  height: 0.5rem;
+  border-radius: 999px;
+  background: var(--bg-subtle, #f1f5f9);
+  overflow: hidden;
+}
+
+.examination-viewer__iop-bar {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--status-gray, #64748b);
+}
+
+.examination-viewer__iop-bar--normal {
+  background: var(--status-green, #16a34a);
+}
+
+.examination-viewer__iop-bar--low {
+  background: var(--clinical-blue, #0284c7);
+}
+
+.examination-viewer__iop-bar--high {
+  background: var(--status-rose, #e11d48);
+}
+
+.examination-viewer__badge {
+  grid-area: badge;
+  justify-self: end;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--status-gray-bg, #f1f5f9);
+  color: var(--status-gray, #64748b);
+}
+
+.examination-viewer__badge--normal {
+  background: var(--status-green-bg, #dcfce7);
+  color: var(--status-green, #16a34a);
+}
+
+.examination-viewer__badge--low {
+  background: var(--clinical-blue-light, #e0f2fe);
+  color: var(--clinical-blue, #0284c7);
+}
+
+.examination-viewer__badge--high {
+  background: var(--status-rose-bg, #ffe4e6);
+  color: var(--status-rose, #e11d48);
+}
+
+/* --- Slit lamp definition list ----------------------------------------- */
+
+.examination-viewer__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1rem;
+  margin: 0;
+}
+
+.examination-viewer__grid > div {
+  min-width: 0;
+}
+
+.examination-viewer__grid dt {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-light, #64748b);
+}
+
+.examination-viewer__grid dd {
+  margin: 0.15rem 0 0;
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.examination-viewer__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* --- Phone width ---------------------------------------------------------- */
+
+@media (max-width: 480px) {
+  .examination-viewer__inner {
+    padding: 0.85rem;
+  }
+
+  .examination-viewer__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .examination-viewer__table thead {
+    display: none;
+  }
+
+  .examination-viewer__table,
+  .examination-viewer__table tbody,
+  .examination-viewer__table tr,
+  .examination-viewer__table th,
+  .examination-viewer__table td {
+    display: block;
+    width: 100%;
+  }
+
+  .examination-viewer__table tr {
+    padding: 0.4rem 0;
+    border-bottom: 1px solid var(--border-color, #e2e8f0);
+  }
+
+  .examination-viewer__table td {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    border-bottom: 0;
+  }
+
+  .examination-viewer__table td::before {
+    content: attr(data-label);
+    font-family: var(--font-sans, 'Plus Jakarta Sans', sans-serif);
+    font-size: 0.75rem;
+    color: var(--text-light, #64748b);
+  }
+}
