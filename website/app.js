@@ -1598,6 +1598,12 @@ if (typeof module !== 'undefined' && module.exports) {
     hideCCStatus,
     setButtonLoading,
     truncateMiddle,
+    initDemoTabs,
+    initRBACSimulator,
+    initZKSimulator,
+    initAISimulator,
+    initFHIRSimulator,
+    initDataFetchSimulator,
   };
 } else if (typeof window !== 'undefined') {
   window.RetinaX = Object.assign(window.RetinaX || {}, {
@@ -1612,5 +1618,11 @@ if (typeof module !== 'undefined' && module.exports) {
     hideCCStatus,
     setButtonLoading,
     truncateMiddle,
+    initDemoTabs,
+    initRBACSimulator,
+    initZKSimulator,
+    initAISimulator,
+    initFHIRSimulator,
+    initDataFetchSimulator,
   });
 }
