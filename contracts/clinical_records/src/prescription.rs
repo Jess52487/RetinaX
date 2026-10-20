@@ -139,7 +139,9 @@ pub fn rollback_add_prescription(
         require_authorized_vision_records(env, &caller)?;
     }
 
-    env.storage().temporary().remove(&(symbol_short!("P_ADD_RX"), rx_id));
+    env.storage()
+        .temporary()
+        .remove(&(symbol_short!("P_ADD_RX"), rx_id));
     crate::events::publish_prescription_rolled_back(env, rx_id, caller);
     Ok(())
 }
@@ -153,7 +155,11 @@ pub fn get_prescription_count(env: &Env) -> u64 {
 ///
 /// # Errors
 /// Returns `NotInitialized`, `Unauthorized`, or `RecordNotFound`.
-pub fn get_prescription(env: &Env, caller: Address, id: u64) -> Result<Prescription, ContractError> {
+pub fn get_prescription(
+    env: &Env,
+    caller: Address,
+    id: u64,
+) -> Result<Prescription, ContractError> {
     require_initialized(env)?;
 
     if get_access_control_contract(env).is_some() {

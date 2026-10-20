@@ -26,7 +26,6 @@ pub enum AccessControlError {
     DelegationDepthExceeded = 8,
 }
 
-
 /// Core permissions in the RetinaX access control system.
 ///
 /// Permissions are granted through roles, custom grants, delegations, or ACL group membership.

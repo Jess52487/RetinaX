@@ -98,11 +98,7 @@ impl AccessControlContract {
     }
 
     /// Returns a paginated list of whitelisted addresses along with total count.
-    pub fn get_whitelisted_addresses(
-        env: Env,
-        offset: u32,
-        limit: u32,
-    ) -> (Vec<Address>, u32) {
+    pub fn get_whitelisted_addresses(env: Env, offset: u32, limit: u32) -> (Vec<Address>, u32) {
         whitelist::get_whitelisted_addresses(&env, offset, limit)
     }
 
@@ -130,11 +126,7 @@ impl AccessControlContract {
     }
 
     /// Revokes an assigned role.
-    pub fn revoke_role(
-        env: Env,
-        caller: Address,
-        user: Address,
-    ) -> Result<(), AccessControlError> {
+    pub fn revoke_role(env: Env, caller: Address, user: Address) -> Result<(), AccessControlError> {
         permissions::revoke_role(&env, &caller, &user)
     }
 

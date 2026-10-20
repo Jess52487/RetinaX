@@ -195,11 +195,7 @@ pub fn batch_remove_from_whitelist(
 
 /// Returns a paginated list of whitelisted addresses along with the total count.
 /// (paginated_addresses, total_count)
-pub fn get_whitelisted_addresses(
-    env: &Env,
-    offset: u32,
-    limit: u32,
-) -> (Vec<Address>, u32) {
+pub fn get_whitelisted_addresses(env: &Env, offset: u32, limit: u32) -> (Vec<Address>, u32) {
     let list: Vec<Address> = env
         .storage()
         .persistent()
@@ -241,4 +237,3 @@ pub fn is_whitelisted(env: &Env, user: &Address) -> bool {
         .get(&(WL, user.clone()))
         .unwrap_or(false)
 }
-

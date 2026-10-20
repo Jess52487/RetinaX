@@ -146,7 +146,6 @@ fn test_delegation() {
     assert!(res4_retry.is_ok());
 }
 
-
 #[test]
 fn test_whitelist() {
     let env = Env::default();
@@ -219,7 +218,6 @@ fn test_whitelist() {
     assert_eq!(page_rem.len(), 1);
     assert_eq!(page_rem.get(0).unwrap(), user2);
 }
-
 
 #[test]
 fn test_acl_groups() {

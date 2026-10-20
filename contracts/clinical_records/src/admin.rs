@@ -24,7 +24,9 @@ pub fn initialize(
     }
     admin.require_auth();
     env.storage().instance().set(&ADMIN, &admin);
-    env.storage().instance().set(&VISION_RECORDS, &vision_records);
+    env.storage()
+        .instance()
+        .set(&VISION_RECORDS, &vision_records);
     if let Some(ac) = access_control {
         env.storage().instance().set(&ACCESS_CONTROL, &ac);
     }
@@ -71,7 +73,9 @@ pub fn set_vision_records_contract(
     if admin != stored_admin {
         return Err(ContractError::Unauthorized);
     }
-    env.storage().instance().set(&VISION_RECORDS, &vision_records);
+    env.storage()
+        .instance()
+        .set(&VISION_RECORDS, &vision_records);
     Ok(())
 }
 
@@ -96,7 +100,9 @@ pub fn set_access_control_contract(
     if admin != stored_admin {
         return Err(ContractError::Unauthorized);
     }
-    env.storage().instance().set(&ACCESS_CONTROL, &access_control);
+    env.storage()
+        .instance()
+        .set(&ACCESS_CONTROL, &access_control);
     Ok(())
 }
 

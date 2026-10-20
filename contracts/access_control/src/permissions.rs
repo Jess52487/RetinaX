@@ -85,17 +85,15 @@ pub fn assign_role(
 }
 
 /// Revokes a user's role assignment.
-pub fn revoke_role(
-    env: &Env,
-    caller: &Address,
-    user: &Address,
-) -> Result<(), AccessControlError> {
+pub fn revoke_role(env: &Env, caller: &Address, user: &Address) -> Result<(), AccessControlError> {
     caller.require_auth();
     if !has_permission(env, caller, &Permission::ManageUsers) {
         return Err(AccessControlError::Unauthorized);
     }
 
-    env.storage().persistent().remove(&(ROLE_ASSIGN, user.clone()));
+    env.storage()
+        .persistent()
+        .remove(&(ROLE_ASSIGN, user.clone()));
     Ok(())
 }
 
@@ -107,10 +105,8 @@ pub fn get_role(env: &Env, user: &Address) -> Role {
         }
     }
 
-    let assignment: Option<RoleAssignment> = env
-        .storage()
-        .persistent()
-        .get(&(ROLE_ASSIGN, user.clone()));
+    let assignment: Option<RoleAssignment> =
+        env.storage().persistent().get(&(ROLE_ASSIGN, user.clone()));
 
     match assignment {
         Some(a) => {
@@ -140,10 +136,8 @@ pub fn has_permission(env: &Env, user: &Address, permission: &Permission) -> boo
         }
     }
 
-    let assignment: Option<RoleAssignment> = env
-        .storage()
-        .persistent()
-        .get(&(ROLE_ASSIGN, user.clone()));
+    let assignment: Option<RoleAssignment> =
+        env.storage().persistent().get(&(ROLE_ASSIGN, user.clone()));
 
     if let Some(a) = assignment {
         let now = env.ledger().timestamp();
@@ -175,17 +169,11 @@ pub fn has_permission(env: &Env, user: &Address, permission: &Permission) -> boo
     }
 
     // 4. ACL Groups
-    let groups: Option<Vec<Symbol>> = env
-        .storage()
-        .persistent()
-        .get(&(USR_GRPS, user.clone()));
+    let groups: Option<Vec<Symbol>> = env.storage().persistent().get(&(USR_GRPS, user.clone()));
 
     if let Some(user_groups) = groups {
         for group_name in user_groups.iter() {
-            let group: Option<AclGroup> = env
-                .storage()
-                .persistent()
-                .get(&(ACL_GRP, group_name));
+            let group: Option<AclGroup> = env.storage().persistent().get(&(ACL_GRP, group_name));
 
             if let Some(grp) = group {
                 for p in grp.permissions.iter() {
@@ -381,7 +369,6 @@ pub fn revoke_scoped_delegation(
     Ok(())
 }
 
-
 /// Creates a new ACL group with a set of permissions.
 pub fn create_group(
     env: &Env,
@@ -487,7 +474,9 @@ pub fn create_access_policy(
         conditions,
         enabled: true,
     };
-    env.storage().persistent().set(&(ACC_POL, policy_id), &policy);
+    env.storage()
+        .persistent()
+        .set(&(ACC_POL, policy_id), &policy);
     Ok(())
 }
 

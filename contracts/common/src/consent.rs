@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use crate::CommonError;
+use std::collections::HashMap;
 
 // ── String Validation Bounds ──────────────────────────────────────────────────
 
@@ -30,11 +30,7 @@ pub const MAX_GRANTEE_LEN: usize = 128;
 /// # Complexity
 /// - Time: O(L) where L is the string byte length (bounded by max_len <= 128, effectively O(1)).
 /// - Space: O(1) auxiliary memory.
-pub fn validate_consent_string(
-    s: &str,
-    min_len: usize,
-    max_len: usize,
-) -> Result<(), CommonError> {
+pub fn validate_consent_string(s: &str, min_len: usize, max_len: usize) -> Result<(), CommonError> {
     let len = s.len();
     if len < min_len || len > max_len {
         return Err(CommonError::InvalidInput);
@@ -341,7 +337,14 @@ mod tests {
 
         // Grant with TTL 3600
         assert_eq!(
-            manager.grant("cst_1", "patient_alice", "dr_bob", ConsentType::Treatment, now, Some(3600)),
+            manager.grant(
+                "cst_1",
+                "patient_alice",
+                "dr_bob",
+                ConsentType::Treatment,
+                now,
+                Some(3600)
+            ),
             Ok(())
         );
 
@@ -355,9 +358,18 @@ mod tests {
         assert_eq!(manager.is_active("cst_1", now + 5000), Ok(false));
 
         // Check status
-        assert_eq!(manager.get_consent_status("cst_1", now), Ok(ConsentStatus::Active));
-        assert_eq!(manager.get_consent_status("cst_1", now + 4000), Ok(ConsentStatus::Expired));
-        assert_eq!(manager.get_consent_status("nonexistent", now), Ok(ConsentStatus::NotGranted));
+        assert_eq!(
+            manager.get_consent_status("cst_1", now),
+            Ok(ConsentStatus::Active)
+        );
+        assert_eq!(
+            manager.get_consent_status("cst_1", now + 4000),
+            Ok(ConsentStatus::Expired)
+        );
+        assert_eq!(
+            manager.get_consent_status("nonexistent", now),
+            Ok(ConsentStatus::NotGranted)
+        );
     }
 
     #[test]
@@ -366,7 +378,14 @@ mod tests {
         let now = 1_000_000;
 
         assert_eq!(
-            manager.grant("cst_2", "patient_alice", "dr_bob", ConsentType::Sharing, now, None),
+            manager.grant(
+                "cst_2",
+                "patient_alice",
+                "dr_bob",
+                ConsentType::Sharing,
+                now,
+                None
+            ),
             Ok(())
         );
 
@@ -375,10 +394,16 @@ mod tests {
         // Revoke
         assert_eq!(manager.revoke("cst_2"), Ok(()));
         assert_eq!(manager.is_active("cst_2", now), Ok(false));
-        assert_eq!(manager.get_consent_status("cst_2", now), Ok(ConsentStatus::Revoked));
+        assert_eq!(
+            manager.get_consent_status("cst_2", now),
+            Ok(ConsentStatus::Revoked)
+        );
 
         // Revoke non-existent
-        assert_eq!(manager.revoke("cst_unknown"), Err(CommonError::RecordNotFound));
+        assert_eq!(
+            manager.revoke("cst_unknown"),
+            Err(CommonError::RecordNotFound)
+        );
     }
 
     #[test]
@@ -388,38 +413,78 @@ mod tests {
 
         // Empty ID
         assert_eq!(
-            manager.grant("", "patient_alice", "dr_bob", ConsentType::Treatment, now, None),
+            manager.grant(
+                "",
+                "patient_alice",
+                "dr_bob",
+                ConsentType::Treatment,
+                now,
+                None
+            ),
             Err(CommonError::InvalidInput)
         );
 
         // ID too long (> 64 bytes)
         let long_id = "a".repeat(65);
         assert_eq!(
-            manager.grant(&long_id, "patient_alice", "dr_bob", ConsentType::Treatment, now, None),
+            manager.grant(
+                &long_id,
+                "patient_alice",
+                "dr_bob",
+                ConsentType::Treatment,
+                now,
+                None
+            ),
             Err(CommonError::InvalidInput)
         );
 
         // Subject too long (> 128 bytes)
         let long_subject = "s".repeat(129);
         assert_eq!(
-            manager.grant("cst_valid", &long_subject, "dr_bob", ConsentType::Treatment, now, None),
+            manager.grant(
+                "cst_valid",
+                &long_subject,
+                "dr_bob",
+                ConsentType::Treatment,
+                now,
+                None
+            ),
             Err(CommonError::InvalidInput)
         );
 
         // Grantee too long (> 128 bytes)
         let long_grantee = "g".repeat(129);
         assert_eq!(
-            manager.grant("cst_valid", "patient_alice", &long_grantee, ConsentType::Treatment, now, None),
+            manager.grant(
+                "cst_valid",
+                "patient_alice",
+                &long_grantee,
+                ConsentType::Treatment,
+                now,
+                None
+            ),
             Err(CommonError::InvalidInput)
         );
 
         // Invalid query strings
         assert_eq!(manager.is_active("", now), Err(CommonError::InvalidInput));
         assert_eq!(manager.revoke(""), Err(CommonError::InvalidInput));
-        assert_eq!(manager.get_consent_status("", now), Err(CommonError::InvalidInput));
-        assert_eq!(manager.get_consent_attribute("", now), Err(CommonError::InvalidInput));
-        assert_eq!(manager.get_active_consents_for_grantee("", now), Err(CommonError::InvalidInput));
-        assert_eq!(manager.get_active_consents_for_subject("", now), Err(CommonError::InvalidInput));
+        assert_eq!(
+            manager.get_consent_status("", now),
+            Err(CommonError::InvalidInput)
+        );
+        assert_eq!(
+            manager.get_consent_attribute("", now),
+            Err(CommonError::InvalidInput)
+        );
+        assert_eq!(
+            manager.get_active_consents_for_grantee("", now),
+            Err(CommonError::InvalidInput)
+        );
+        assert_eq!(
+            manager.get_active_consents_for_subject("", now),
+            Err(CommonError::InvalidInput)
+        );
     }
 
     #[test]
@@ -427,18 +492,30 @@ mod tests {
         let mut manager = ConsentManager::default();
         let now = 1_000_000;
 
-        manager.grant("c1", "p1", "dr1", ConsentType::Treatment, now, Some(1000)).unwrap();
-        manager.grant("c2", "p1", "dr1", ConsentType::Research, now, Some(100)).unwrap();
-        manager.grant("c3", "p1", "dr2", ConsentType::Sharing, now, Some(1000)).unwrap();
-        manager.grant("c4", "p2", "dr1", ConsentType::Treatment, now, Some(1000)).unwrap();
+        manager
+            .grant("c1", "p1", "dr1", ConsentType::Treatment, now, Some(1000))
+            .unwrap();
+        manager
+            .grant("c2", "p1", "dr1", ConsentType::Research, now, Some(100))
+            .unwrap();
+        manager
+            .grant("c3", "p1", "dr2", ConsentType::Sharing, now, Some(1000))
+            .unwrap();
+        manager
+            .grant("c4", "p2", "dr1", ConsentType::Treatment, now, Some(1000))
+            .unwrap();
 
         // At now + 500: c2 is expired (TTL 100), others active
-        let dr1_consents = manager.get_active_consents_for_grantee("dr1", now + 500).unwrap();
+        let dr1_consents = manager
+            .get_active_consents_for_grantee("dr1", now + 500)
+            .unwrap();
         assert_eq!(dr1_consents.len(), 2);
         assert!(dr1_consents.iter().any(|c| c.subject == "p1"));
         assert!(dr1_consents.iter().any(|c| c.subject == "p2"));
 
-        let p1_consents = manager.get_active_consents_for_subject("p1", now + 500).unwrap();
+        let p1_consents = manager
+            .get_active_consents_for_subject("p1", now + 500)
+            .unwrap();
         assert_eq!(p1_consents.len(), 2);
         assert!(p1_consents.iter().any(|c| c.grantee == "dr1"));
         assert!(p1_consents.iter().any(|c| c.grantee == "dr2"));
@@ -468,7 +545,14 @@ mod expiration_tests {
         let mut manager = ConsentManager::default();
         let now = 1_000_000u64;
         manager
-            .grant("cst_b", "patient_alice", "dr_bob", ConsentType::Treatment, now, Some(3600))
+            .grant(
+                "cst_b",
+                "patient_alice",
+                "dr_bob",
+                ConsentType::Treatment,
+                now,
+                Some(3600),
+            )
             .unwrap();
         let exp = now + 3600;
 
@@ -534,7 +618,16 @@ mod expiration_tests {
 
         // Simulate many concurrent readers sweeping across the window,
         // including the exact boundary.
-        for t in [now, now + 1, now + 50, now + 99, exp - 1, exp, exp + 1, exp + 100] {
+        for t in [
+            now,
+            now + 1,
+            now + 50,
+            now + 99,
+            exp - 1,
+            exp,
+            exp + 1,
+            exp + 100,
+        ] {
             active_equals_status(&manager, "cst_c", t);
         }
         // Full sweep around the boundary.

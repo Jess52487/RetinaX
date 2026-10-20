@@ -547,7 +547,16 @@ fn setup_clinical_with_access_control() -> (
     let cr_client = ClinicalRecordsContractClient::new(&env, &cr_id);
     cr_client.initialize(&admin, &vision_records, &Some(ac_id.clone()));
 
-    (env, cr_client, ac_client, admin, vision_records, doctor, patient, unauthorized)
+    (
+        env,
+        cr_client,
+        ac_client,
+        admin,
+        vision_records,
+        doctor,
+        patient,
+        unauthorized,
+    )
 }
 
 #[test]
@@ -622,7 +631,8 @@ fn test_access_control_rbac_prescription() {
     let rx_id = client.prepare_add_prescription(&doctor, &patient, &doctor, &rx_data);
 
     // 2. Caller without WriteRecord cannot prepare prescription
-    let unauth_prep = client.try_prepare_add_prescription(&unauthorized, &patient, &doctor, &rx_data);
+    let unauth_prep =
+        client.try_prepare_add_prescription(&unauthorized, &patient, &doctor, &rx_data);
     assert_eq!(unauth_prep, Err(Ok(ContractError::Unauthorized)));
 
     // 3. Caller with WriteRecord can commit prescription
@@ -648,7 +658,10 @@ fn test_access_control_configuration_and_updates() {
     let (env, client, ac_client, admin, _, doctor, _, unauthorized) =
         setup_clinical_with_access_control();
 
-    assert_eq!(client.get_access_control_contract(), Some(ac_client.address.clone()));
+    assert_eq!(
+        client.get_access_control_contract(),
+        Some(ac_client.address.clone())
+    );
 
     // Admin updates access control contract address
     let new_ac = Address::generate(&env);
@@ -660,4 +673,3 @@ fn test_access_control_configuration_and_updates() {
     let unauth_update = client.try_set_access_control_contract(&doctor, &unauthorized);
     assert_eq!(unauth_update, Err(Ok(ContractError::Unauthorized)));
 }
-
