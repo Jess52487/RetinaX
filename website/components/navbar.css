@@ -26,6 +26,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: relative;
 }
 
 .brand-logo {
@@ -63,11 +64,18 @@
   letter-spacing: 0.5px;
 }
 
+.nav-menu {
+  display: flex;
+  align-items: center;
+}
+
 .nav-links {
   display: flex;
   align-items: center;
   gap: 2rem;
   list-style: none;
+  margin: 0;
+  padding: 0;
 }
 
 .nav-link {
@@ -75,17 +83,82 @@
   text-decoration: none;
   font-size: 0.95rem;
   font-weight: 600;
-  transition: color 0.2s ease;
+  transition: color 0.2s ease, background-color 0.2s ease;
+  border-radius: 999px;
+  padding: 0.45rem 0.7rem;
 }
 
-.nav-link:hover {
+.nav-link:hover,
+.nav-link:focus-visible {
   color: #5eead4;
+  background-color: rgba(94, 234, 212, 0.08);
+  outline: none;
+}
+
+.nav-link[aria-current="page"] {
+  color: #5eead4;
+  position: relative;
+  background-color: rgba(94, 234, 212, 0.08);
+}
+
+.nav-link[aria-current="page"]::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0.7rem;
+  right: 0.7rem;
+  height: 2px;
+  background-color: #5eead4;
+  border-radius: 2px;
 }
 
 .nav-actions {
   display: flex;
   align-items: center;
   gap: 1rem;
+}
+
+.nav-toggle {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 0.28rem;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 0.75rem;
+  background: rgba(15, 23, 42, 0.55);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.25s ease;
+}
+
+.nav-toggle:hover,
+.nav-toggle:focus-visible {
+  border-color: rgba(94, 234, 212, 0.7);
+  outline: none;
+}
+
+.nav-toggle span {
+  display: block;
+  width: 1.2rem;
+  height: 2px;
+  background: #f8fafc;
+  border-radius: 999px;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.nav-toggle[aria-expanded="true"] span:nth-child(1) {
+  transform: translateY(6px) rotate(45deg);
+}
+
+.nav-toggle[aria-expanded="true"] span:nth-child(2) {
+  opacity: 0;
+}
+
+.nav-toggle[aria-expanded="true"] span:nth-child(3) {
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .network-pill {

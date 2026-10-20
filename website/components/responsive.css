@@ -118,6 +118,62 @@
   }
 }
 
+/* Mobile navigation */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0.75rem 0;
+  }
+
+  .nav-toggle {
+    display: inline-flex;
+  }
+
+  .nav-menu {
+    position: absolute;
+    top: calc(100% + 0.65rem);
+    left: 0;
+    right: 0;
+    display: block;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(-12px);
+    transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s ease;
+    background: rgba(11, 15, 25, 0.97);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 1rem;
+    box-shadow: 0 18px 50px rgba(15, 23, 42, 0.45);
+    padding: 0.75rem;
+    z-index: 20;
+  }
+
+  .nav-menu.is-open {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .nav-links {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+  }
+
+  .nav-link {
+    display: block;
+    padding: 0.8rem 0.95rem;
+    border-radius: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .nav-actions .theme-toggle,
+  .nav-actions .btn-secondary {
+    display: none;
+  }
+}
+
 /* Mobile portrait */
 @media (max-width: 600px) {
   .container {
@@ -169,14 +225,6 @@
 
   .stat-num {
     font-size: 1.8rem;
-  }
-
-  .nav-links {
-    display: none;
-  }
-
-  .nav-actions .btn-secondary {
-    display: none;
   }
 
   .brand-badge {

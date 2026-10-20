@@ -22,7 +22,6 @@
 
     connectedCallback() {
       this.render();
-      this._setupListeners();
     }
 
     disconnectedCallback() {
@@ -98,6 +97,15 @@
       const displayLabel = this._connected
         ? this._shortenAddress(this._address)
         : this._label;
+      const t = (key, vars, fallback) => {
+        if (typeof window !== 'undefined' && window.RetinaXI18n && window.RetinaXI18n.t) {
+          return window.RetinaXI18n.t(key, vars, fallback);
+        }
+        return fallback;
+      };
+      const ariaLabel = this._connected
+        ? t('wallet.connectedAria', { address: this._address }, 'Wallet connected: ' + this._address)
+        : t('nav.connectWalletAria', {}, 'Connect Stellar Wallet');
 
       this.innerHTML = `
         <button class="connect-wallet-btn ${this._connected ? 'connected' : ''} skeleton-fade-in" type="button" aria-label="${this._connected ? 'Wallet connected: ' + this._address : 'Connect Wallet'}">
@@ -114,6 +122,7 @@
           }
         </button>
       `;
+      this._setupListeners();
     }
 
     _setupListeners() {

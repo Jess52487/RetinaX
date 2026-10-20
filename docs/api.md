@@ -1,5 +1,7 @@
 # 📚 API Reference
 
+> **Detailed micro-contract references:** [Access Control](api/access_control.md) · [Clinical Records](api/clinical_records.md)
+
 ## Vision Records Contract
 
 ### Initialization

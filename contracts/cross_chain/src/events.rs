@@ -2,6 +2,8 @@
 
 use soroban_sdk::{contracttype, symbol_short, Address, Bytes, BytesN, Env, String, Symbol};
 
+use crate::clinical_share::ClinicalShareMessage;
+
 pub fn publish_initialized(env: &Env, admin: Address) {
     env.events().publish((symbol_short!("INIT"),), admin);
 }
@@ -92,6 +94,13 @@ pub fn emit_state_root_anchored(
         ledger_sequence,
     };
     env.events().publish((symbol_short!("ROOT_ANC"),), event);
+}
+
+/// Publish a clinical share for relayers. The ciphertext travels in the event
+/// so a relayer needs only this event to deliver the share.
+pub fn emit_clinical_share(env: &Env, message: &ClinicalShareMessage, ciphertext: Bytes) {
+    env.events()
+        .publish((symbol_short!("SHARE"),), (message.clone(), ciphertext));
 }
 
 #[contracttype]

@@ -1,0 +1,348 @@
+{
+  "_meta": {
+    "language": "en",
+    "name": "English",
+    "direction": "ltr",
+    "fallback": "en",
+    "version": 1
+  },
+  "meta": {
+    "title": "RetinaX — Decentralized Vision Care Records & AI Diagnostics Protocol on Stellar",
+    "description": "RetinaX is a patient-controlled, privacy-preserving vision health protocol built on Stellar (Soroban WASM) featuring ZK-privacy proofs, FHIR v4 compliance, and automated AI diagnostic provider rotation."
+  },
+  "nav": {
+    "skip": "Skip to main content",
+    "brandAria": "RetinaX Protocol Home",
+    "brandBadgeAria": "Protocol Version Soroban v23",
+    "mainNavigation": "Main Navigation",
+    "overview": "Overview",
+    "overviewAria": "Overview section",
+    "privacy": "ZK Privacy",
+    "privacyAria": "ZK Privacy section",
+    "aiOracle": "AI Oracle",
+    "aiOracleAria": "AI Oracle section",
+    "playground": "Playground",
+    "playgroundAria": "Playground section",
+    "contracts": "Contracts",
+    "contractsAria": "Contracts section",
+    "languageLabel": "Language",
+    "languageSelector": "Select language",
+    "themeDark": "🌙 Dark mode",
+    "themeLight": "☀️ Light mode",
+    "themeToggleToDark": "Switch to dark mode",
+    "themeToggleToLight": "Switch to light mode",
+    "networkStatus": "Network status: Stellar Testnet",
+    "network": "Stellar Testnet",
+    "connectWallet": "Connect Wallet",
+    "connectWalletAria": "Connect Stellar Wallet",
+    "githubOrg": "GitHub Org",
+    "githubAria": "View RetinaX on GitHub (opens in new tab)"
+  },
+  "hero": {
+    "tagHealthcare": "Healthcare Infrastructure",
+    "tagStellar": "Stellar Soroban",
+    "title": "Decentralized Vision Care Records & Verifiable AI Diagnostics",
+    "subtitle": "RetinaX replaces fragmented Electronic Medical Record (EMR) siloes with a patient-controlled, privacy-preserving health data infrastructure. Featuring zero-knowledge proofs, FHIR v4 compliance, and automated AI diagnostic oracle rotation on Soroban.",
+    "ctaPlayground": "Launch Live Playground",
+    "ctaRepository": "Explore Repository",
+    "imageAlt": "Optometrist using digital eye examination scanner",
+    "imageCaption": "🏥 Clinical Practice Verification",
+    "imageAudit": "Stellar Real-Time Audit",
+    "statFinality": "Ledger Finality",
+    "statFee": "Avg Transaction Fee",
+    "statSovereignty": "Patient Data Sovereignty",
+    "statContracts": "WASM Smart Contracts"
+  },
+  "privacy": {
+    "tag": "Zero-Knowledge Architecture",
+    "title": "Patient-Controlled Privacy & Anonymous Verification",
+    "body": "RetinaX integrates Groth16 zk-SNARK verifiers on Soroban, allowing patients to prove medical eligibility—such as meeting visual acuity standards for driver licensing—without revealing private prescriptions or personal identity.",
+    "bullet1": "Client-Side AES Encryption for all medical payloads prior to IPFS storage.",
+    "bullet2": "Instant Granular Revocation: Patient controls access duration for doctors.",
+    "bullet3": "GDPR Art. 25 & HIPAA compliant data transit boundary rules.",
+    "cta": "Test ZK Proof Generator",
+    "imageAlt": "Zero knowledge medical privacy dashboard"
+  },
+  "aiOracle": {
+    "tag": "AI Diagnostic Integration",
+    "title": "Decentralized AI Oracles with Automated Failover",
+    "body": "AI computer-vision models evaluate retinal scans for diabetic retinopathy and glaucoma risk. The `ai_integration` Soroban contract monitors provider response latency and automatically rotates execution to fallback oracle nodes if SLA limits fail.",
+    "bullet1": "On-Chain Provider Health Tracking (`Active`, `Paused`, `Retired`).",
+    "bullet2": "Automated Weight Rotation when primary oracle exceeds SLA response thresholds.",
+    "bullet3": "FHIR v4 LOINC-coded diagnostic report generation.",
+    "cta": "Simulate Oracle Failover",
+    "imageAlt": "AI diagnostic retinal scan dashboard"
+  },
+  "demo": {
+    "title": "Interactive Protocol Playground",
+    "desc": "Test real-time execution of role access grants, zero-knowledge proofs, AI oracle failovers, and FHIR v4 converters.",
+    "tablistAria": "Interactive Protocol Playground Modules",
+    "tabRbac": "🔑 1. Access Control",
+    "tabRbacAria": "Access Control Module",
+    "tabZk": "🛡️ 2. ZK Proof Generator",
+    "tabZkAria": "Zero-Knowledge Proof Generator Module",
+    "tabAi": "🤖 3. AI Oracle Rotation",
+    "tabAiAria": "AI Oracle Rotation Module",
+    "tabFhir": "🏥 4. FHIR v4 Converter",
+    "tabFhirAria": "FHIR v4 Converter Module",
+    "tabFetch": "📊 5. Data Fetching",
+    "tabFetchAria": "Data Fetching Module",
+    "rbacTitle": "Role-Based Access Control (RBAC)",
+    "rbacDesc": "Simulate patient access permission grants enforced by Soroban require_auth().",
+    "patientAddress": "Patient Stellar Address",
+    "targetDoctor": "Target Doctor / Clinic",
+    "doctorAuthorized": "Dr. Smith Optometry Clinic (Authorized)",
+    "doctorPending": "Vision Research Lab (Pending)",
+    "doctorBlocked": "Unauthorized Provider (Block)",
+    "grantDuration": "Grant Duration:",
+    "hours": "Hours",
+    "executeAuth": "Execute Soroban Auth",
+    "rbacConsoleTitle": "SOROBAN CONTRACT EXECUTION LOG",
+    "consoleLive": "• LIVE STATE",
+    "rbacLoading": "Executing Soroban require_auth()...",
+    "rbacPending": "Transaction Pending: Submitting access grant to Soroban...",
+    "rbacSuccess": "Access Granted On-Chain — Transaction Confirmed",
+    "rbacError": "Access Grant Failed",
+    "rbacGranted": "✅ Access Granted On-Chain!",
+    "zkTitle": "Zero-Knowledge Medical Proof Generator",
+    "zkDesc": "Generate a groth16 proof for driver's license visual acuity standards without revealing patient identity.",
+    "acuityLabel": "Patient Visual Acuity:",
+    "thresholdLabel": "Required Threshold",
+    "thresholdValue": "Visual Acuity <= 20/40 (Driver Standard)",
+    "generateProof": "Generate Groth16 zk-SNARK",
+    "zkConsoleTitle": "ZK_VERIFIER OUTPUT",
+    "zkConsoleStatus": "PROOF READY",
+    "zkLoading": "Generating Groth16 Proof...",
+    "zkSuccess": "Proof Verified Valid — On-Chain Confirmation Received",
+    "zkError": "ZK Proof Verification Failed",
+    "zkVerified": "✅ Proof Verified Valid!",
+    "aiTitle": "AI Oracle Provider Rotation",
+    "aiDesc": "Simulate SLA timeout on the primary oracle node to verify automated failover.",
+    "aiStatusLabel": "Primary Oracle Node Status",
+    "aiHealthy": "Primary Oracle (Active — 100% Uptime)",
+    "aiTimeout": "Primary Oracle Failed (500ms Timeout Exceeded)",
+    "simulateDiagnostic": "Simulate Diagnostic Request",
+    "aiConsoleTitle": "AI_INTEGRATION ROTATION LOG",
+    "aiConsoleStatus": "SLA MONITORED",
+    "aiLoading": "Evaluating Diagnostic Oracles...",
+    "aiSuccess": "Diagnostic Complete — AI Oracle Response Confirmed",
+    "aiError": "AI Oracle Call Failed",
+    "aiPartial": "Partial failure: Primary oracle timed out, but failover succeeded.",
+    "fhirTitle": "FHIR v4 Clinical Record Converter",
+    "fhirDesc": "Map Soroban contract structs into international FHIR v4 JSON records.",
+    "recordType": "Record Type",
+    "recordRefraction": "Optometric Refraction Exam",
+    "recordIop": "Intraocular Pressure (IOP)",
+    "generateFhir": "Generate FHIR v4 Payload",
+    "fhirConsoleTitle": "FHIR_V4_CONVERTER JSON",
+    "fhirConsoleStatus": "LOINC VALIDATED",
+    "fhirLoading": "Mapping to FHIR v4 JSON...",
+    "fhirSuccess": "FHIR v4 Payload Generated — Contract Response Confirmed",
+    "fhirError": "FHIR Conversion Failed",
+    "fhirMapped": "✅ Mapped to FHIR v4!",
+    "fetchTitle": "Clinical Data Retrieval",
+    "fetchDesc": "Simulate fetching patient data from the decentralized storage network.",
+    "queryCid": "Query Patient CID",
+    "fetchButton": "Fetch Clinical Data",
+    "fetchConsoleIdle": "DATA_RETRIEVAL IDLE",
+    "fetchConsoleAwaiting": "AWAITING_REQUEST",
+    "fetchHint": "Click \"Fetch Clinical Data\" to simulate a decentralized network retrieval...",
+    "fetchLoading": "Fetching from IPFS...",
+    "fetchProgress": "DATA_RETRIEVAL IN_PROGRESS",
+    "fetchCid": "FETCHING_CID",
+    "fetchSuccess": "Clinical Data Retrieved — Decryption Complete",
+    "fetchError": "Data Fetch Failed",
+    "fetchSuccessStatus": "DATA_RETRIEVAL SUCCESS",
+    "fetchDecrypted": "DECRYPTED_PAYLOAD",
+    "fetchFailedStatus": "DATA_RETRIEVAL FAILED",
+    "fetchRetry": "RETRY_AVAILABLE",
+    "fetchPartial": "Partial data retrieved: Some records may be incomplete. Retry recommended.",
+    "statusVerified": "Verified",
+    "statusSyncing": "Syncing",
+    "statusArchived": "Archived"
+  },
+  "contracts": {
+    "title": "Core Smart Contract Modules",
+    "desc": "All 24 workspace contracts compiled in Rust for Soroban, with deployment status, testnet addresses, and direct source links.",
+    "filterLabel": "Filter contracts by category",
+    "all": "All",
+    "core": "Core",
+    "security": "Security",
+    "governance": "Governance",
+    "clinical": "Clinical",
+    "infrastructure": "Infrastructure",
+    "showing": "{count} contracts shown",
+    "statusDeployed": "Deployed",
+    "statusNotDeployed": "Not deployed",
+    "statusDemo": "Demo address",
+    "demoAddress": "Demo address (not deployed)",
+    "testnetAddress": "Testnet address",
+    "noAddress": "No testnet address configured",
+    "sourceLink": "View source",
+    "docsLink": "Read docs",
+    "categoryCore": "Core protocol workflows",
+    "categorySecurity": "Identity, access, and proof verification",
+    "categoryGovernance": "Protocol governance and treasury",
+    "categoryClinical": "Clinical data and interoperability",
+    "categoryInfrastructure": "Shared services and coordination",
+    "noscript": "Enable JavaScript to browse the full contract registry.",
+    "items": {
+      "access_control": {
+        "name": "Access Control",
+        "description": "Role-based and attribute-based access control, delegations, ACL groups, and whitelists."
+      },
+      "ai_integration": {
+        "name": "AI Integration",
+        "description": "AI provider registry, SLA health monitoring, and automatic failover weight rotation."
+      },
+      "analytics": {
+        "name": "Analytics",
+        "description": "Privacy-preserving aggregate metrics and trend analysis for clinical operations."
+      },
+      "audit": {
+        "name": "Audit Trail",
+        "description": "Tamper-evident, hash-chained audit logs for access events and compliance proofs."
+      },
+      "clinical_records": {
+        "name": "Clinical Records",
+        "description": "Eye examinations, intraocular pressure, slit lamp findings, visual fields, imaging, and two-phase prescriptions."
+      },
+      "common": {
+        "name": "Common Library",
+        "description": "Shared errors, admin tiers, progressive authorization, and reusable contract utilities."
+      },
+      "compliance": {
+        "name": "Compliance",
+        "description": "GDPR and HIPAA policy enforcement, consent tracking, and clinical data classification."
+      },
+      "cross_chain": {
+        "name": "Cross-Chain Bridge",
+        "description": "Foreign-chain message validation with Merkle proofs and refund-safe settlement flows."
+      },
+      "delegation": {
+        "name": "Delegation",
+        "description": "Delegated task queue with executor registration, assignment, and result submission."
+      },
+      "emr_bridge": {
+        "name": "EMR Bridge",
+        "description": "EMR provider registry and interoperable clinical data exchange records."
+      },
+      "events": {
+        "name": "Event Bus",
+        "description": "Structured event envelopes with Lamport ordering and schema registration."
+      },
+      "fhir": {
+        "name": "FHIR Resources",
+        "description": "FHIR v4 resource storage, patient validation, and version migration."
+      },
+      "governor": {
+        "name": "Governor",
+        "description": "Proposals, commit-reveal voting, and governance power delegation."
+      },
+      "identity": {
+        "name": "Identity & Enclave",
+        "description": "Decentralized identity, guardian-based social recovery, and ZK credential verification."
+      },
+      "key_manager": {
+        "name": "Key Manager",
+        "description": "Hierarchical deterministic key derivation, rotation, and cryptographic secret governance."
+      },
+      "metering": {
+        "name": "Metering",
+        "description": "Per-tenant resource consumption, quota enforcement, and fair cost allocation."
+      },
+      "orchestrator": {
+        "name": "Orchestrator",
+        "description": "Atomic cross-contract transactions with timeout handling and rollback."
+      },
+      "staking": {
+        "name": "Staking",
+        "description": "Stake, request withdrawal, claim rewards, and tolerate rounding differences."
+      },
+      "state_channel": {
+        "name": "State Channel",
+        "description": "Payment channels with cooperative and unilateral close plus fraud proofs."
+      },
+      "treasury": {
+        "name": "Treasury",
+        "description": "Asset limits, governance-approved spending, and DEX swap routing."
+      },
+      "vault": {
+        "name": "Vault",
+        "description": "Emergency key reconstruction, key rotation, and dead-man release controls."
+      },
+      "vision_records": {
+        "name": "Vision Records",
+        "description": "Patient eye health history, consent, access grants, and clinical record links."
+      },
+      "zk_verifier": {
+        "name": "ZK Verifier",
+        "description": "On-chain Groth16 zk-SNARK verification for anonymous eligibility proofs."
+      },
+      "zk_voting": {
+        "name": "ZK Voting",
+        "description": "Anonymous ballots with Merkle roots, nullifiers, and tally verification."
+      }
+    }
+  },
+  "repo": {
+    "title": "Open Source on GitHub",
+    "desc": "RetinaX is fully open-source under the MIT License. Explore the contracts, contribute issues, or fork the protocol."
+  },
+  "footer": {
+    "brandDesc": "Decentralized, privacy-preserving vision care records protocol and AI diagnostic verification ecosystem on Stellar.",
+    "protocolTitle": "Protocol",
+    "overview": "Overview",
+    "overviewAria": "Navigate to Overview section",
+    "privacy": "ZK Privacy",
+    "privacyAria": "Navigate to ZK Privacy section",
+    "aiOracle": "AI Oracle",
+    "aiOracleAria": "Navigate to AI Oracle section",
+    "playground": "Playground",
+    "playgroundAria": "Navigate to Playground Demo section",
+    "ecosystemTitle": "Ecosystem",
+    "githubOrg": "GitHub Organization",
+    "githubOrgAria": "GitHub Organization (opens in new tab)",
+    "discussions": "Community Discussions",
+    "grantfox": "GrantFox Grants",
+    "grantfoxAria": "GrantFox Grants (opens in new tab)",
+    "soroban": "Stellar Soroban",
+    "sorobanAria": "Stellar Soroban Documentation (opens in new tab)",
+    "openSourceTitle": "Open Source",
+    "license": "MIT License",
+    "licenseAria": "MIT License (opens in new tab)",
+    "contributing": "Contributing Guide",
+    "contributingAria": "Contributing Guide (opens in new tab)",
+    "roadmap": "Roadmap Issues",
+    "roadmapAria": "Roadmap and Issues on GitHub (opens in new tab)",
+    "copyright": "© {year} RetinaX Protocol. Licensed under MIT.",
+    "copyrightPrefix": "©",
+    "copyrightSuffix": "RetinaX Protocol. Licensed under MIT.",
+    "builtWith": "Built with ❤️ on Stellar & Soroban"
+  },
+  "wallet": {
+    "title": "Connect Wallet",
+    "freighter": "Freighter Wallet",
+    "recommended": "Recommended",
+    "albedo": "Albedo",
+    "xbull": "xBull Wallet",
+    "newToStellar": "New to Stellar?",
+    "learnMore": "Learn more about wallets",
+    "infoTitle": "RetinaX Protocol Details",
+    "infoBody": "RetinaX standardizes clinical vision records on Stellar using WASM smart contracts and Groth16 zero-knowledge proofs.",
+    "loinc": "LOINC Standard: 28886-0 | FHIR Version: v4.0.1",
+    "connectedAria": "Wallet connected: {address}"
+  },
+  "common": {
+    "processing": "Processing...",
+    "closeNotification": "Close notification",
+    "pending": "PENDING",
+    "confirmed": "CONFIRMED",
+    "failed": "FAILED",
+    "copied": "Copied",
+    "copyFailed": "Copy failed",
+    "copyContractAddress": "Copy contract address",
+    "contractAddressCopied": "Contract address copied",
+    "copyContractAddressFailed": "Copy contract address failed"
+  }
+}

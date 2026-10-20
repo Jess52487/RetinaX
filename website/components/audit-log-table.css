@@ -1,0 +1,174 @@
+/* ==========================================================================
+   RetinaX — Audit Log Table
+   Styles for the <audit-log-table> component (audit-log-table.js).
+   Uses the shared theme tokens from styles.css, so it follows light and dark mode.
+   ========================================================================== */
+
+audit-log-table {
+  display: block;
+  color: var(--text-main);
+}
+
+.audit-log-table__filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+  margin-bottom: 1rem;
+}
+
+.audit-log-table__filters label {
+  display: flex;
+  flex: 1 1 10rem;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 10rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.audit-log-table__filters input {
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-subtle);
+  color: var(--text-main);
+}
+
+.audit-log-table__summary {
+  margin-bottom: 0.5rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.audit-log-table__scroll {
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+
+.audit-log-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+/* Visually hidden, but still read by screen readers. */
+.audit-log-table caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+
+.audit-log-table th,
+.audit-log-table td {
+  padding: 0.7rem 0.9rem;
+  border-bottom: 1px solid var(--border-color);
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.audit-log-table th {
+  background: var(--bg-subtle);
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.audit-log-table td {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  color: var(--text-main);
+}
+
+.audit-log-table__empty {
+  text-align: center;
+  font-family: var(--font-sans);
+  color: var(--text-muted);
+}
+
+.audit-log-table__pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.audit-log-table__pager button {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-surface);
+  color: var(--text-main);
+  font: inherit;
+  cursor: pointer;
+}
+
+.audit-log-table__pager button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.audit-log-table__pager button:focus-visible,
+.audit-log-table__filters input:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
+.audit-log-table__page-info {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+/* Narrow screens: each row becomes a stacked block, with labels taken from data-label. */
+@media (max-width: 640px) {
+  .audit-log-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  .audit-log-table table,
+  .audit-log-table tbody,
+  .audit-log-table tr,
+  .audit-log-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .audit-log-table tr {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .audit-log-table td {
+    display: grid;
+    grid-template-columns: 6.5rem 1fr;
+    gap: 0.5rem;
+    padding: 0.3rem 0.9rem;
+    border: 0;
+  }
+
+  .audit-log-table td::before {
+    content: attr(data-label);
+    font-family: var(--font-sans);
+    font-weight: 600;
+    color: var(--text-muted);
+  }
+
+  .audit-log-table td.audit-log-table__empty {
+    display: block;
+  }
+
+  .audit-log-table td.audit-log-table__empty::before {
+    content: none;
+  }
+}
