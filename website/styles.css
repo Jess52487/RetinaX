@@ -17,6 +17,7 @@
 @import url('./components/contracts.css');
 @import url('./components/footer.css');
 @import url('./components/skeleton.css');
+@import url('./components/patient-card.css');
 @import url('./components/modals.css');
 @import url('./components/health-status.css');
 @import url('./components/connect-wallet.css');
@@ -1372,4 +1373,3 @@ modal-dialog {
     scroll-behavior: auto !important;
   }
 }
-
