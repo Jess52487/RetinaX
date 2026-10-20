@@ -3,6 +3,7 @@
 Thank you for your interest in contributing to RetinaX! This document provides guidelines and information for contributors.
 
 For a full setup walkthrough and codebase tour, see the [Contributor Onboarding](docs/onboarding/README.md) guide.
+Smart contract contributors should also read the [Smart Contract Developer Contribution Guide](docs/smart-contract-contributing.md).
 
 ## 🚀 Getting Started
 
