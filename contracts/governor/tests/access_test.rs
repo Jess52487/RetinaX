@@ -1,160 +1,150 @@
 //! access_test.rs
 //!
-//! Tests for Unauthenticated Admin Function Calls in the `governor` contract.
+//! Tests for authentication and authorization constraints in the `Governor` contract.
 //!
-//! Goal: Ensure every admin-gated function reverts with `GovernorError::Unauthorized`
-//! (or equivalent) when invoked by an arbitrary, unauthenticated address.
+//! Verifies that access-gated functions properly enforce authorization:
+//! - Non-admin callers cannot execute admin-gated functions (`set_total_vote_supply`)
+//! - Non-proposer callers cannot advance a proposal from `Draft` phase
+//! - Unauthorized delegates cannot commit votes on behalf of delegators
+//! - Re-initialization is rejected
 
 #![cfg(test)]
 
 extern crate std;
 
-use soroban_sdk::{testutils::Address as _, vec, Address, Bytes, Env, String, Vec};
+use governor::{
+    proposal::{ProposalAction, ProposalType},
+    ContractError, GovernorContract, GovernorContractClient,
+};
+use soroban_sdk::{
+    symbol_short,
+    testutils::{Address as _, Ledger as _},
+    vec, Address, BytesN, Env, String,
+};
 
-use crate::GovernorContract;
-use crate::GovernorContractClient;
-use crate::GovernorError;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/// Deploy and initialise the governor; return `(env, client, admin, stranger)`.
-/// `stranger` is a freshly generated address with no roles whatsoever.
-fn setup() -> (Env, GovernorContractClient<'static>, Address, Address) {
+/// Deploy and initialize the governor; return `(env, client, admin, stranger)`.
+fn setup() -> (
+    Env,
+    Address,
+    GovernorContractClient<'static>,
+    Address,
+    Address,
+) {
     let env = Env::default();
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
+    let staking = Address::generate(&env);
+    let treasury = Address::generate(&env);
     let stranger = Address::generate(&env);
 
-    let contract_id = env.register_contract(None, GovernorContract);
+    let contract_id = env.register(GovernorContract, ());
     let client = GovernorContractClient::new(&env, &contract_id);
 
-    client.initialize(&admin, &51_u32, &100_u64);
+    client.initialize(&admin, &staking, &treasury, &1_000_000_000i128);
 
-    (env, client, admin, stranger)
+    (env, contract_id, client, admin, stranger)
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
-
-/// A random address cannot update the quorum threshold.
-#[test]
-fn test_update_quorum_unauthorized() {
-    let (env, client, _admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
-
-    let result = client.try_update_quorum(&stranger, &60_u32);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
+fn set_mock_stake(env: &Env, contract_id: &Address, voter: &Address, amount: i128) {
+    env.as_contract(contract_id, || {
+        let key = (symbol_short!("M_STK"), voter.clone());
+        env.storage().persistent().set(&key, &amount);
+    });
 }
 
-/// A random address cannot change the voting period.
-#[test]
-fn test_update_voting_period_unauthorized() {
-    let (env, client, _admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
+// ── Access Control Tests ─────────────────────────────────────────────────────
 
-    let result = client.try_update_voting_period(&stranger, &200_u64);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
+#[test]
+fn test_set_total_vote_supply_unauthorized() {
+    let (_env, _contract_id, client, _admin, stranger) = setup();
+
+    let res = client.try_set_total_vote_supply(&stranger, &2_000_000_000i128);
+    assert_eq!(res, Err(Ok(ContractError::Unauthorized)));
 }
 
-/// A random address cannot transfer admin ownership.
 #[test]
-fn test_transfer_admin_unauthorized() {
-    let (env, client, _admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
+fn test_set_total_vote_supply_by_admin_succeeds() {
+    let (_env, _contract_id, client, admin, _stranger) = setup();
 
-    let new_admin = Address::generate(&env);
-    let result = client.try_transfer_admin(&stranger, &new_admin);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
+    let res = client.try_set_total_vote_supply(&admin, &2_000_000_000i128);
+    assert!(res.is_ok());
 }
 
-/// A random address cannot cancel another user's proposal.
 #[test]
-fn test_cancel_proposal_unauthorized() {
-    let (env, client, _admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
+fn test_reinitialize_rejected() {
+    let (env, _contract_id, client, _admin, stranger) = setup();
 
-    // Create a valid proposal as admin first so we have a real proposal_id.
-    let targets = vec![&env, Address::generate(&env)];
-    let call_data = vec![&env, Bytes::new(&env)];
+    let staking2 = Address::generate(&env);
+    let treasury2 = Address::generate(&env);
+
+    let res = client.try_initialize(&stranger, &staking2, &treasury2, &1_000_000_000i128);
+    assert_eq!(res, Err(Ok(ContractError::AlreadyInitialized)));
+}
+
+#[test]
+fn test_advance_draft_phase_only_by_proposer() {
+    let (env, contract_id, client, _admin, stranger) = setup();
+
+    let proposer = Address::generate(&env);
+    set_mock_stake(&env, &contract_id, &proposer, 5_000);
+
+    let mut actions = vec![&env];
+    actions.push_back(ProposalAction {
+        target: Address::generate(&env),
+        function: symbol_short!("ACTION"),
+        params_hash: BytesN::from_array(&env, &[1u8; 32]),
+    });
+
     let proposal_id = client.create_proposal(
-        &_admin,
-        &String::from_str(&env, "Title"),
-        &String::from_str(&env, "Description"),
-        &targets,
-        &call_data,
+        &proposer,
+        &ProposalType::ParameterChange,
+        &String::from_str(&env, "Proposal"),
+        &actions,
     );
 
-    let result = client.try_cancel_proposal(&stranger, &proposal_id);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
+    // Stranger cannot advance proposal from Draft
+    let res = client.try_advance_phase(&stranger, &proposal_id);
+    assert_eq!(res, Err(Ok(ContractError::Unauthorized)));
+
+    // Proposer can advance proposal from Draft to Discussion
+    let res_proposer = client.try_advance_phase(&proposer, &proposal_id);
+    assert!(res_proposer.is_ok());
 }
 
-/// A random address cannot pause the contract.
 #[test]
-fn test_pause_unauthorized() {
-    let (env, client, _admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
+fn test_commit_vote_as_delegate_unauthorized() {
+    let (env, contract_id, client, _admin, stranger) = setup();
 
-    let result = client.try_pause(&stranger);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
-}
+    let delegator = Address::generate(&env);
+    let real_delegate = Address::generate(&env);
+    set_mock_stake(&env, &contract_id, &delegator, 10_000);
 
-/// A random address cannot unpause the contract.
-#[test]
-fn test_unpause_unauthorized() {
-    let (env, client, admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
+    // Delegate to real_delegate
+    client.delegate(&delegator, &real_delegate);
 
-    // Pause first (as admin) so unpause has meaningful state to revert.
-    client.pause(&admin);
+    let mut actions = vec![&env];
+    actions.push_back(ProposalAction {
+        target: Address::generate(&env),
+        function: symbol_short!("ACTION"),
+        params_hash: BytesN::from_array(&env, &[1u8; 32]),
+    });
 
-    let result = client.try_unpause(&stranger);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
-}
+    let proposal_id = client.create_proposal(
+        &delegator,
+        &ProposalType::ParameterChange,
+        &String::from_str(&env, "Delegation Proposal"),
+        &actions,
+    );
 
-/// A random address cannot add a new guardian / council member.
-#[test]
-fn test_add_guardian_unauthorized() {
-    let (env, client, _admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
+    // Move to voting phase: Draft -> Discussion -> Voting
+    client.advance_phase(&delegator, &proposal_id);
+    env.ledger().with_mut(|l| l.timestamp += 259_200 + 1);
+    client.advance_phase(&delegator, &proposal_id);
 
-    let new_guardian = Address::generate(&env);
-    let result = client.try_add_guardian(&stranger, &new_guardian);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
-}
+    let commitment = BytesN::from_array(&env, &[7u8; 32]);
 
-/// A random address cannot remove a guardian.
-#[test]
-fn test_remove_guardian_unauthorized() {
-    let (env, client, admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
-
-    // Add a guardian as admin first.
-    let guardian = Address::generate(&env);
-    client.add_guardian(&admin, &guardian);
-
-    let result = client.try_remove_guardian(&stranger, &guardian);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
-}
-
-/// A random address cannot execute a passed proposal ahead of schedule.
-#[test]
-fn test_execute_proposal_unauthorized() {
-    let (env, client, _admin, stranger) = setup();
-    env.mock_all_auths_allowing_non_root_auth();
-
-    // Use a non-existent ID; the contract should reject auth before even
-    // checking whether the proposal exists.
-    let result = client.try_execute_proposal_as_admin(&stranger, &999_u64);
-    assert_eq!(result, Err(Ok(GovernorError::Unauthorized)));
-}
-
-/// Verifying that the legitimate admin CAN still update the quorum (sanity
-/// check so we don't mistake a broken function for an access-control win).
-#[test]
-fn test_update_quorum_by_admin_succeeds() {
-    let (env, client, admin, _stranger) = setup();
-
-    let result = client.try_update_quorum(&admin, &65_u32);
-    assert!(result.is_ok(), "Admin should be able to update quorum");
-    assert_eq!(client.get_quorum(), 65_u32);
+    // Stranger tries to commit as delegate for delegator
+    let res = client.try_commit_vote_as_delegate(&stranger, &delegator, &proposal_id, &commitment);
+    assert_eq!(res, Err(Ok(ContractError::NotADelegate)));
 }

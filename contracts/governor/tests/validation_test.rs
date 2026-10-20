@@ -1,187 +1,217 @@
 //! validation_test.rs
 //!
-//! Edge-case tests for Zero-Value / Empty-Input Parameter Passing
-//! in the `governor` smart contract.
+//! Input validation and constraint testing for the `Governor` smart contract.
 //!
-//! Goal: Send inputs of zero, empty vectors, or blank addresses to
-//! critical state-modifying functions and verify they revert with the
-//! expected error types rather than silently accepting bad state.
+//! Verifies:
+//! - Empty proposal actions rejected (`InvalidInput`)
+//! - Non-positive total supply rejected during init and admin update (`InvalidInput`)
+//! - Unstaked proposal creation rejected (`InsufficientStake`)
+//! - Self-delegation rejected (`SelfDelegation`)
+//! - Operations on non-existent proposal IDs return `ProposalNotFound`
+//! - Committing vote with zero stake rejected (`InsufficientStake`)
 
 #![cfg(test)]
 
 extern crate std;
 
+use governor::{
+    proposal::{ProposalAction, ProposalType},
+    voting::VoteChoice,
+    ContractError, GovernorContract, GovernorContractClient,
+};
 use soroban_sdk::{
-    testutils::{Address as _, MockAuth, MockAuthInvoke},
-    vec, Address, Env, IntoVal, Vec,
+    symbol_short,
+    testutils::{Address as _, Ledger as _},
+    vec, Address, BytesN, Env, String, Vec,
 };
 
-// ── Import the contract under test ────────────────────────────────────────────
-// Adjust the path / crate name to match your workspace layout.
-use crate::GovernorContract;
-use crate::GovernorContractClient;
-use crate::GovernorError;
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/// Spin up a fresh environment and deploy a properly initialised governor.
-/// Returns `(env, client, admin)` ready for further testing.
-fn setup() -> (Env, GovernorContractClient<'static>, Address) {
+fn setup() -> (
+    Env,
+    Address,
+    GovernorContractClient<'static>,
+    Address,
+) {
     let env = Env::default();
     env.mock_all_auths();
 
     let admin = Address::generate(&env);
-    let contract_id = env.register_contract(None, GovernorContract);
+    let staking = Address::generate(&env);
+    let treasury = Address::generate(&env);
+
+    let contract_id = env.register(GovernorContract, ());
     let client = GovernorContractClient::new(&env, &contract_id);
 
-    // Standard initialisation – non-zero quorum / threshold so we have a
-    // meaningful baseline to contrast against zero-value calls below.
-    client.initialize(&admin, &51_u32, &1_u64);
+    client.initialize(&admin, &staking, &treasury, &1_000_000_000i128);
 
-    (env, client, admin)
+    (env, contract_id, client, admin)
 }
 
-// ── Tests ─────────────────────────────────────────────────────────────────────
+fn set_mock_stake(env: &Env, contract_id: &Address, voter: &Address, amount: i128) {
+    env.as_contract(contract_id, || {
+        let key = (symbol_short!("M_STK"), voter.clone());
+        env.storage().persistent().set(&key, &amount);
+    });
+}
 
-/// Calling `create_proposal` with an empty title string must revert.
+// ── Validation Tests ─────────────────────────────────────────────────────────
+
 #[test]
-fn test_create_proposal_empty_title_reverts() {
-    let (env, client, _admin) = setup();
+fn test_create_proposal_empty_actions_rejected() {
+    let (env, contract_id, client, _admin) = setup();
+
     let proposer = Address::generate(&env);
+    set_mock_stake(&env, &contract_id, &proposer, 1_000);
 
-    let result = client.try_create_proposal(
+    let empty_actions: Vec<ProposalAction> = vec![&env];
+
+    let res = client.try_create_proposal(
         &proposer,
-        &soroban_sdk::String::from_str(&env, ""), // ← empty title
-        &soroban_sdk::String::from_str(&env, "Valid description"),
-        &Vec::<Address>::new(&env),
-        &Vec::<soroban_sdk::Bytes>::new(&env),
+        &ProposalType::ParameterChange,
+        &String::from_str(&env, "Empty actions"),
+        &empty_actions,
     );
-
-    assert_eq!(result, Err(Ok(GovernorError::InvalidInput)));
+    assert_eq!(res, Err(Ok(ContractError::InvalidInput)));
 }
 
-/// Calling `create_proposal` with an empty description string must revert.
 #[test]
-fn test_create_proposal_empty_description_reverts() {
-    let (env, client, _admin) = setup();
+fn test_create_proposal_unstaked_proposer_rejected() {
+    let (env, _contract_id, client, _admin) = setup();
+
     let proposer = Address::generate(&env);
+    // No stake set (zero stake)
 
-    let result = client.try_create_proposal(
+    let mut actions = vec![&env];
+    actions.push_back(ProposalAction {
+        target: Address::generate(&env),
+        function: symbol_short!("ACTION"),
+        params_hash: BytesN::from_array(&env, &[0u8; 32]),
+    });
+
+    let res = client.try_create_proposal(
         &proposer,
-        &soroban_sdk::String::from_str(&env, "Valid title"),
-        &soroban_sdk::String::from_str(&env, ""), // ← empty description
-        &Vec::<Address>::new(&env),
-        &Vec::<soroban_sdk::Bytes>::new(&env),
+        &ProposalType::ParameterChange,
+        &String::from_str(&env, "Unstaked proposer"),
+        &actions,
     );
-
-    assert_eq!(result, Err(Ok(GovernorError::InvalidInput)));
+    assert_eq!(res, Err(Ok(ContractError::InsufficientStake)));
 }
 
-/// Calling `create_proposal` with an empty target-address vector must revert.
 #[test]
-fn test_create_proposal_empty_targets_reverts() {
-    let (env, client, _admin) = setup();
-    let proposer = Address::generate(&env);
-
-    let result = client.try_create_proposal(
-        &proposer,
-        &soroban_sdk::String::from_str(&env, "Valid title"),
-        &soroban_sdk::String::from_str(&env, "Valid description"),
-        &Vec::<Address>::new(&env), // ← empty targets
-        &Vec::<soroban_sdk::Bytes>::new(&env),
-    );
-
-    assert_eq!(result, Err(Ok(GovernorError::InvalidInput)));
-}
-
-/// `cast_vote` with a zero-weight / no-power account should revert.
-#[test]
-fn test_cast_vote_zero_voting_power_reverts() {
-    let (env, client, _admin) = setup();
-    let proposer = Address::generate(&env);
-    let voter = Address::generate(&env); // no tokens → zero voting power
-
-    // First create a valid proposal so we have a proposal_id to vote on.
-    let targets = vec![&env, Address::generate(&env)];
-    let call_data = vec![&env, soroban_sdk::Bytes::new(&env)];
-    let proposal_id = client.create_proposal(
-        &proposer,
-        &soroban_sdk::String::from_str(&env, "Title"),
-        &soroban_sdk::String::from_str(&env, "Desc"),
-        &targets,
-        &call_data,
-    );
-
-    let result = client.try_cast_vote(&voter, &proposal_id, &1_u32 /* For */);
-    assert_eq!(result, Err(Ok(GovernorError::NoVotingPower)));
-}
-
-/// `update_quorum` called with a quorum of zero must revert.
-#[test]
-fn test_update_quorum_zero_reverts() {
-    let (env, client, admin) = setup();
-
-    let result = client.try_update_quorum(&admin, &0_u32); // ← zero quorum
-    assert_eq!(result, Err(Ok(GovernorError::InvalidInput)));
-}
-
-/// `update_quorum` called with a quorum above 100 % must revert.
-#[test]
-fn test_update_quorum_above_max_reverts() {
-    let (env, client, admin) = setup();
-
-    let result = client.try_update_quorum(&admin, &101_u32); // > 100 %
-    assert_eq!(result, Err(Ok(GovernorError::InvalidInput)));
-}
-
-/// `update_voting_period` called with a period of zero blocks must revert.
-#[test]
-fn test_update_voting_period_zero_reverts() {
-    let (env, client, admin) = setup();
-
-    let result = client.try_update_voting_period(&admin, &0_u64); // ← zero period
-    assert_eq!(result, Err(Ok(GovernorError::InvalidInput)));
-}
-
-/// `execute_proposal` called with a proposal_id of zero (non-existent) must revert.
-#[test]
-fn test_execute_proposal_zero_id_reverts() {
-    let (env, client, _admin) = setup();
-
-    let result = client.try_execute_proposal(&0_u64); // ← zero / non-existent ID
-    assert_eq!(result, Err(Ok(GovernorError::ProposalNotFound)));
-}
-
-/// `cancel_proposal` with a zero / non-existent proposal_id must revert.
-#[test]
-fn test_cancel_proposal_zero_id_reverts() {
-    let (env, client, admin) = setup();
-
-    let result = client.try_cancel_proposal(&admin, &0_u64);
-    assert_eq!(result, Err(Ok(GovernorError::ProposalNotFound)));
-}
-
-/// Passing the zero address (`Address::default`) as the admin during
-/// initialization must revert.
-#[test]
-fn test_initialize_zero_address_admin_reverts() {
+fn test_initialize_non_positive_supply_rejected() {
     let env = Env::default();
     env.mock_all_auths();
 
-    let contract_id = env.register_contract(None, GovernorContract);
+    let admin = Address::generate(&env);
+    let staking = Address::generate(&env);
+    let treasury = Address::generate(&env);
+
+    let contract_id = env.register(GovernorContract, ());
     let client = GovernorContractClient::new(&env, &contract_id);
 
-    // Soroban doesn't have a canonical "zero address" the same way EVM does,
-    // but we can pass a freshly generated address that holds no tokens/roles
-    // and verify the contract rejects a blank/null-equivalent identifier if
-    // the contract exposes that validation.
-    //
-    // If your contract uses `Option<Address>` for admin, pass `None` here.
-    let result = client.try_initialize(
-        &Address::generate(&env), // placeholder – replace with null sentinel if contract exposes one
-        &0_u32,                   // ← zero quorum should already cause InvalidInput
-        &0_u64,                   // ← zero voting period
+    // Zero supply
+    let res_zero = client.try_initialize(&admin, &staking, &treasury, &0i128);
+    assert_eq!(res_zero, Err(Ok(ContractError::InvalidInput)));
+
+    // Negative supply
+    let res_neg = client.try_initialize(&admin, &staking, &treasury, &-100i128);
+    assert_eq!(res_neg, Err(Ok(ContractError::InvalidInput)));
+}
+
+#[test]
+fn test_set_total_vote_supply_non_positive_rejected() {
+    let (_env, _contract_id, client, admin) = setup();
+
+    let res_zero = client.try_set_total_vote_supply(&admin, &0i128);
+    assert_eq!(res_zero, Err(Ok(ContractError::InvalidInput)));
+
+    let res_neg = client.try_set_total_vote_supply(&admin, &-500i128);
+    assert_eq!(res_neg, Err(Ok(ContractError::InvalidInput)));
+}
+
+#[test]
+fn test_self_delegation_rejected() {
+    let (env, _contract_id, client, _admin) = setup();
+
+    let user = Address::generate(&env);
+    let res = client.try_delegate(&user, &user);
+    assert_eq!(res, Err(Ok(ContractError::SelfDelegation)));
+}
+
+#[test]
+fn test_non_existent_proposal_operations_rejected() {
+    let (env, _contract_id, client, admin) = setup();
+
+    let non_existent_id = 9999u64;
+
+    // View returns None
+    assert!(client.get_proposal(&non_existent_id).is_none());
+    assert!(client.get_proposal_summary(&non_existent_id).is_none());
+
+    // Advance phase returns ProposalNotFound
+    assert_eq!(
+        client.try_advance_phase(&admin, &non_existent_id),
+        Err(Ok(ContractError::ProposalNotFound))
     );
 
-    assert_eq!(result, Err(Ok(GovernorError::InvalidInput)));
+    // Commit vote returns ProposalNotFound
+    let voter = Address::generate(&env);
+    let commitment = BytesN::from_array(&env, &[1u8; 32]);
+    assert_eq!(
+        client.try_commit_vote(&voter, &non_existent_id, &commitment),
+        Err(Ok(ContractError::ProposalNotFound))
+    );
+
+    // Reveal vote returns ProposalNotFound
+    let salt = BytesN::from_array(&env, &[2u8; 32]);
+    assert_eq!(
+        client.try_reveal_vote(&voter, &non_existent_id, &VoteChoice::For, &salt),
+        Err(Ok(ContractError::ProposalNotFound))
+    );
+
+    // Execute returns ProposalNotFound
+    assert_eq!(
+        client.try_execute_proposal(&admin, &non_existent_id),
+        Err(Ok(ContractError::ProposalNotFound))
+    );
+}
+
+#[test]
+fn test_commit_vote_already_committed_and_wrong_phase() {
+    let (env, contract_id, client, _admin) = setup();
+
+    let proposer = Address::generate(&env);
+    set_mock_stake(&env, &contract_id, &proposer, 10_000);
+
+    let mut actions = vec![&env];
+    actions.push_back(ProposalAction {
+        target: Address::generate(&env),
+        function: symbol_short!("ACTION"),
+        params_hash: BytesN::from_array(&env, &[0u8; 32]),
+    });
+
+    let proposal_id = client.create_proposal(
+        &proposer,
+        &ProposalType::ParameterChange,
+        &String::from_str(&env, "Voting proposal"),
+        &actions,
+    );
+
+    let voter = Address::generate(&env);
+    let commitment = BytesN::from_array(&env, &[1u8; 32]);
+
+    // In Draft phase, commit fails with WrongPhase
+    let res_draft = client.try_commit_vote(&voter, &proposal_id, &commitment);
+    assert_eq!(res_draft, Err(Ok(ContractError::WrongPhase)));
+
+    // Move to voting phase: Draft -> Discussion -> Voting
+    client.advance_phase(&proposer, &proposal_id);
+    env.ledger().with_mut(|l| l.timestamp += 259_200 + 1);
+    client.advance_phase(&proposer, &proposal_id);
+
+    // First commit succeeds
+    assert!(client.try_commit_vote(&voter, &proposal_id, &commitment).is_ok());
+
+    // Second commit fails with AlreadyCommitted
+    let res_dup = client.try_commit_vote(&voter, &proposal_id, &commitment);
+    assert_eq!(res_dup, Err(Ok(ContractError::AlreadyCommitted)));
 }

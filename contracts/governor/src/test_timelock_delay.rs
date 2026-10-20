@@ -20,7 +20,7 @@ mod tests {
     fn make_proposal(env: &Env, proposal_type: ProposalType, timelock_ends: u64) -> Proposal {
         let now = env.ledger().timestamp();
         Proposal {
-            id: next_id(env),
+            id: 1,
             proposal_type,
             phase: ProposalPhase::Timelock,
             proposer: Address::generate(env),
@@ -160,66 +160,83 @@ mod tests {
     #[test]
     fn test_proposal_stored_and_retrieved() {
         let env = Env::default();
+        let contract_id = env.register(crate::GovernorContract, ());
         let proposal = make_proposal(&env, ProposalType::ParameterChange, 9999);
         let id = proposal.id;
-        store(&env, &proposal);
-        let loaded = load(&env, id).expect("proposal not found");
-        assert_eq!(loaded.id, id);
-        assert_eq!(loaded.phase, ProposalPhase::Timelock);
-        assert_eq!(loaded.timelock_ends, 9999);
+        env.as_contract(&contract_id, || {
+            store(&env, &proposal);
+            let loaded = load(&env, id).expect("proposal not found");
+            assert_eq!(loaded.id, id);
+            assert_eq!(loaded.phase, ProposalPhase::Timelock);
+            assert_eq!(loaded.timelock_ends, 9999);
+        });
     }
 
     #[test]
     fn test_cancellation_sets_rejected_phase() {
         let env = Env::default();
+        let contract_id = env.register(crate::GovernorContract, ());
         let mut proposal = make_proposal(&env, ProposalType::ParameterChange, 9999);
         let id = proposal.id;
-        store(&env, &proposal);
-        // Simulate cancellation: set phase to Rejected
-        proposal.phase = ProposalPhase::Rejected;
-        store(&env, &proposal);
-        let loaded = load(&env, id).unwrap();
-        assert_eq!(loaded.phase, ProposalPhase::Rejected);
+        env.as_contract(&contract_id, || {
+            store(&env, &proposal);
+            // Simulate cancellation: set phase to Rejected
+            proposal.phase = ProposalPhase::Rejected;
+            store(&env, &proposal);
+            let loaded = load(&env, id).unwrap();
+            assert_eq!(loaded.phase, ProposalPhase::Rejected);
+        });
     }
 
     #[test]
     fn test_cancelled_proposal_cannot_be_executed() {
         let env = Env::default();
+        let contract_id = env.register(crate::GovernorContract, ());
         env.ledger().set_timestamp(0);
         let mut proposal = make_proposal(&env, ProposalType::ParameterChange, 100);
         proposal.phase = ProposalPhase::Rejected;
-        store(&env, &proposal);
-        // Even after timelock expires, a Rejected proposal must not execute
-        env.ledger().set_timestamp(200);
-        let loaded = load(&env, proposal.id).unwrap();
-        assert_eq!(loaded.phase, ProposalPhase::Rejected);
-        assert!(is_timelock_expired(&env, &loaded));
-        // Guard: execution requires Timelock phase
-        assert_ne!(loaded.phase, ProposalPhase::Timelock);
+        env.as_contract(&contract_id, || {
+            store(&env, &proposal);
+            // Even after timelock expires, a Rejected proposal must not execute
+            env.ledger().set_timestamp(200);
+            let loaded = load(&env, proposal.id).unwrap();
+            assert_eq!(loaded.phase, ProposalPhase::Rejected);
+            assert!(is_timelock_expired(&env, &loaded));
+            // Guard: execution requires Timelock phase
+            assert_ne!(loaded.phase, ProposalPhase::Timelock);
+        });
     }
 
     #[test]
     fn test_nonexistent_proposal_returns_none() {
         let env = Env::default();
-        assert!(load(&env, 9999).is_none());
+        let contract_id = env.register(crate::GovernorContract, ());
+        env.as_contract(&contract_id, || {
+            assert!(load(&env, 9999).is_none());
+        });
     }
 
     #[test]
     fn test_multiple_proposals_have_independent_timelocks() {
         let env = Env::default();
+        let contract_id = env.register(crate::GovernorContract, ());
         env.ledger().set_timestamp(0);
-        let p1 = make_proposal(&env, ProposalType::EmergencyAction, TIMELOCK_EMERGENCY);
-        let p2 = make_proposal(&env, ProposalType::ContractUpgrade, TIMELOCK_UPGRADE);
-        store(&env, &p1);
-        store(&env, &p2);
-        // After 6 hours: emergency expired, upgrade still locked
-        env.ledger().set_timestamp(TIMELOCK_EMERGENCY);
-        assert!(is_timelock_expired(&env, &p1));
-        assert!(!is_timelock_expired(&env, &p2));
-        // After 7 days: both expired
-        env.ledger().set_timestamp(TIMELOCK_UPGRADE);
-        assert!(is_timelock_expired(&env, &p1));
-        assert!(is_timelock_expired(&env, &p2));
+        let mut p1 = make_proposal(&env, ProposalType::EmergencyAction, TIMELOCK_EMERGENCY);
+        p1.id = 1;
+        let mut p2 = make_proposal(&env, ProposalType::ContractUpgrade, TIMELOCK_UPGRADE);
+        p2.id = 2;
+        env.as_contract(&contract_id, || {
+            store(&env, &p1);
+            store(&env, &p2);
+            // After 6 hours: emergency expired, upgrade still locked
+            env.ledger().set_timestamp(TIMELOCK_EMERGENCY);
+            assert!(is_timelock_expired(&env, &p1));
+            assert!(!is_timelock_expired(&env, &p2));
+            // After 7 days: both expired
+            env.ledger().set_timestamp(TIMELOCK_UPGRADE);
+            assert!(is_timelock_expired(&env, &p1));
+            assert!(is_timelock_expired(&env, &p2));
+        });
     }
 
     #[test]
