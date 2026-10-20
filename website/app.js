@@ -1273,9 +1273,12 @@ function initDataFetchSimulator() {
         if (window.hideGlobalSpinner) window.hideGlobalSpinner();
 
         if (result.status === 'success') {
-          // 3. Hide placeholder, show result
+          // 3. Hide placeholder, show result with smooth transition
           if (fetchPlaceholder) fetchPlaceholder.style.display = 'none';
-          if (fetchResult) fetchResult.style.display = 'block';
+          if (fetchResult) {
+            fetchResult.style.display = 'block';
+            fetchResult.classList.add('skeleton-fade-in');
+          }
 
           if (fetchStatusLabel) fetchStatusLabel.textContent = 'DATA_RETRIEVAL SUCCESS';
           if (fetchStatusIndicator) fetchStatusIndicator.textContent = 'DECRYPTED_PAYLOAD';
