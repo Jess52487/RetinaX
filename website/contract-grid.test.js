@@ -22,7 +22,10 @@ test('registry covers every workspace contract directory', () => {
     assert.ok(registered.has(directory), `contract not registered: ${directory}`);
   }
   for (const contract of grid.CONTRACTS) {
-    assert.ok(contractDirs.includes(contract.id), `registry entry has no contract directory: ${contract.id}`);
+    assert.ok(
+      contractDirs.includes(contract.id),
+      `registry entry has no contract directory: ${contract.id}`
+    );
   }
 });
 
@@ -32,7 +35,10 @@ test('registry exposes all 24 contracts with unique ids and source paths', () =>
   for (const contract of grid.CONTRACTS) {
     assert.equal(contract.path, `contracts/${contract.id}`);
     assert.ok(contract.name && contract.description, `incomplete metadata: ${contract.id}`);
-    assert.ok(fs.existsSync(path.join(repoRoot, contract.path)), `missing source path: ${contract.path}`);
+    assert.ok(
+      fs.existsSync(path.join(repoRoot, contract.path)),
+      `missing source path: ${contract.path}`
+    );
   }
 });
 
@@ -59,7 +65,11 @@ test('deployment status resolves configured, demo, and undeployed contracts', ()
     address: '',
   });
   assert.deepEqual(
-    grid.resolveContractStatus(contract, { vision_records: 'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM' }, {}),
+    grid.resolveContractStatus(
+      contract,
+      { vision_records: 'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM' },
+      {}
+    ),
     {
       status: 'deployed',
       address: 'CAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAD2KM',

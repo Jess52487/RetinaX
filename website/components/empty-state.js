@@ -78,7 +78,9 @@
         button.className = 'empty-state__action';
         button.textContent = actionLabel;
         button.addEventListener('click', () => {
-          this.dispatchEvent(new CustomEvent('empty-state-action', { bubbles: true, composed: true }));
+          this.dispatchEvent(
+            new CustomEvent('empty-state-action', { bubbles: true, composed: true })
+          );
         });
         wrapper.appendChild(button);
       }

@@ -66,10 +66,16 @@
           input.remove();
         }
         this._status.textContent = t('common.copied', 'Copied');
-        this._button.setAttribute('aria-label', t('common.contractAddressCopied', 'Contract address copied'));
+        this._button.setAttribute(
+          'aria-label',
+          t('common.contractAddressCopied', 'Contract address copied')
+        );
       } catch (_) {
         this._status.textContent = t('common.copyFailed', 'Copy failed');
-        this._button.setAttribute('aria-label', t('common.copyContractAddressFailed', 'Copy contract address failed'));
+        this._button.setAttribute(
+          'aria-label',
+          t('common.copyContractAddressFailed', 'Copy contract address failed')
+        );
       }
     }
   }

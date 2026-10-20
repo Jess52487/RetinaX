@@ -34,7 +34,8 @@
       name: 'AI Integration',
       path: 'contracts/ai_integration',
       category: 'core',
-      description: 'AI provider registry, SLA health monitoring, and automatic failover weight rotation.',
+      description:
+        'AI provider registry, SLA health monitoring, and automatic failover weight rotation.',
       docsPath: 'docs/ai_integration.md',
     },
     {
@@ -42,7 +43,8 @@
       name: 'Analytics',
       path: 'contracts/analytics',
       category: 'core',
-      description: 'Privacy-preserving aggregate metrics and trend analysis for clinical operations.',
+      description:
+        'Privacy-preserving aggregate metrics and trend analysis for clinical operations.',
       docsPath: 'docs/api/analytics.md',
     },
     {
@@ -50,7 +52,8 @@
       name: 'Cross-Chain Bridge',
       path: 'contracts/cross_chain',
       category: 'core',
-      description: 'Foreign-chain message validation with Merkle proofs and refund-safe settlement flows.',
+      description:
+        'Foreign-chain message validation with Merkle proofs and refund-safe settlement flows.',
       docsPath: 'docs/api/cross_chain.md',
     },
     {
@@ -58,7 +61,8 @@
       name: 'Access Control',
       path: 'contracts/access_control',
       category: 'security',
-      description: 'Role-based and attribute-based access control, delegations, ACL groups, and whitelists.',
+      description:
+        'Role-based and attribute-based access control, delegations, ACL groups, and whitelists.',
       docsPath: 'docs/api/access_control.md',
     },
     {
@@ -66,7 +70,8 @@
       name: 'Key Manager',
       path: 'contracts/key_manager',
       category: 'security',
-      description: 'Hierarchical deterministic key derivation, rotation, and cryptographic secret governance.',
+      description:
+        'Hierarchical deterministic key derivation, rotation, and cryptographic secret governance.',
       docsPath: 'docs/key-manager-architecture.md',
     },
     {
@@ -74,7 +79,8 @@
       name: 'Identity & Enclave',
       path: 'contracts/identity',
       category: 'security',
-      description: 'Decentralized identity, guardian-based social recovery, and ZK credential verification.',
+      description:
+        'Decentralized identity, guardian-based social recovery, and ZK credential verification.',
       docsPath: 'docs/api/identity.md',
     },
     {
@@ -82,7 +88,8 @@
       name: 'Audit Trail',
       path: 'contracts/audit',
       category: 'security',
-      description: 'Tamper-evident, hash-chained audit logs for access events and compliance proofs.',
+      description:
+        'Tamper-evident, hash-chained audit logs for access events and compliance proofs.',
       docsPath: 'docs/api/audit.md',
     },
     {
@@ -98,7 +105,8 @@
       name: 'Compliance',
       path: 'contracts/compliance',
       category: 'security',
-      description: 'GDPR and HIPAA policy enforcement, consent tracking, and clinical data classification.',
+      description:
+        'GDPR and HIPAA policy enforcement, consent tracking, and clinical data classification.',
       docsPath: 'docs/api/compliance.md',
     },
     {
@@ -122,7 +130,8 @@
       name: 'Delegation',
       path: 'contracts/delegation',
       category: 'governance',
-      description: 'Delegated task queue with executor registration, assignment, and result submission.',
+      description:
+        'Delegated task queue with executor registration, assignment, and result submission.',
       docsPath: null,
     },
     {
@@ -179,7 +188,8 @@
       name: 'Common Library',
       path: 'contracts/common',
       category: 'infrastructure',
-      description: 'Shared errors, admin tiers, progressive authorization, and reusable contract utilities.',
+      description:
+        'Shared errors, admin tiers, progressive authorization, and reusable contract utilities.',
       docsPath: 'docs/common-library.md',
     },
     {
@@ -329,7 +339,9 @@
 
     card.appendChild(createElement('h3', 'card-title', contractName(contract)));
     card.appendChild(createElement('p', 'card-desc', contractDescription(contract)));
-    card.appendChild(createElement('span', 'contract-card__category', categoryLabel(contract.category)));
+    card.appendChild(
+      createElement('span', 'contract-card__category', categoryLabel(contract.category))
+    );
 
     var addressLabelKey =
       status.status === 'demo' ? 'contracts.demoAddress' : 'contracts.testnetAddress';
@@ -337,7 +349,11 @@
       status.status === 'demo' ? 'Demo address (not deployed)' : 'Testnet address';
     var addressBlock = createElement('div', 'contract-card__address');
     addressBlock.appendChild(
-      createElement('span', 'contract-card__label', translate(addressLabelKey, addressLabelFallback))
+      createElement(
+        'span',
+        'contract-card__label',
+        translate(addressLabelKey, addressLabelFallback)
+      )
     );
     if (status.address) {
       var addressDisplay = document.createElement('contract-address-display');
@@ -367,7 +383,11 @@
 
     var docs = docsUrl(contract);
     if (docs) {
-      var docsLink = createElement('a', 'contract-card__link', translate('contracts.docsLink', 'Read docs'));
+      var docsLink = createElement(
+        'a',
+        'contract-card__link',
+        translate('contracts.docsLink', 'Read docs')
+      );
       docsLink.href = docs;
       docsLink.target = '_blank';
       docsLink.rel = 'noopener noreferrer';
@@ -381,7 +401,9 @@
   function renderResultsCount(count) {
     var countElement = document.getElementById('contract-result-count');
     if (!countElement) return;
-    countElement.textContent = translate('contracts.showing', '{count} contracts shown', { count: count });
+    countElement.textContent = translate('contracts.showing', '{count} contracts shown', {
+      count: count,
+    });
   }
 
   function renderContractGrid(container, options) {

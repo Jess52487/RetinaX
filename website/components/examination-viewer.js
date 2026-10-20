@@ -92,7 +92,9 @@
     const width = iopBarPercent(mmHg);
     return (
       '<div class="examination-viewer__iop-row">' +
-      '<span class="examination-viewer__iop-eye">' + eye + '</span>' +
+      '<span class="examination-viewer__iop-eye">' +
+      eye +
+      '</span>' +
       '<span class="examination-viewer__iop-value">' +
       valueOrDash(Number(mmHg) > 0 ? mmHg : null) +
       (Number(mmHg) > 0 ? ' mmHg' : '') +

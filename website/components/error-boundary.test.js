@@ -21,9 +21,8 @@ function MockHTMLElement() {
   this.querySelector = (sel) => {
     if (sel === '.patient-card-component' || sel === '.repo-avatar-component') {
       return (
-        this._children.find(
-          (c) => c.className && c.className.includes(sel.replace('.', ''))
-        ) || null
+        this._children.find((c) => c.className && c.className.includes(sel.replace('.', ''))) ||
+        null
       );
     }
     if (sel === '.patient-card__retry-btn' || sel === '.repo-avatar__retry-btn') {

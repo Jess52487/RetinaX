@@ -28,16 +28,22 @@ test('routes actions to their matching micro-contract address', async () => {
   app.RETINAX_RPC_URL = 'https://rpc.example.test';
   app.RetinaXRPC = { invokeContract: async (call) => (calls.push(call), 'submitted') };
 
-  assert.equal(await app.invokeRetinaXContractAction('grant_access', { patient: 'G1' }), 'submitted');
+  assert.equal(
+    await app.invokeRetinaXContractAction('grant_access', { patient: 'G1' }),
+    'submitted'
+  );
   assert.equal(await app.invokeRetinaXContractAction('verify_identity'), 'submitted');
   assert.equal(await app.invokeRetinaXContractAction('rotate_key'), 'submitted');
   assert.equal(await app.invokeRetinaXContractAction('append_audit'), 'submitted');
-  assert.deepEqual(calls.map(({ contract, contractId }) => [contract, contractId]), [
-    ['vision_records', 'CRECORDS'],
-    ['identity', 'CIDENTITY'],
-    ['key_manager', 'CKEYS'],
-    ['audit', 'CAUDIT'],
-  ]);
+  assert.deepEqual(
+    calls.map(({ contract, contractId }) => [contract, contractId]),
+    [
+      ['vision_records', 'CRECORDS'],
+      ['identity', 'CIDENTITY'],
+      ['key_manager', 'CKEYS'],
+      ['audit', 'CAUDIT'],
+    ]
+  );
   assert.equal(calls[0].rpcUrl, 'https://rpc.example.test');
 });
 
@@ -49,6 +55,12 @@ test('leaves the simulator usable when no RPC adapter is installed', async () =>
 test('rejects unknown actions and missing deployed addresses', async () => {
   const app = loadContractRouting();
   app.RetinaXRPC = { invokeContract: async () => 'submitted' };
-  await assert.rejects(app.invokeRetinaXContractAction('unknown_action'), /Unsupported contract action/);
-  await assert.rejects(app.invokeRetinaXContractAction('grant_access'), /No deployed address configured for vision_records/);
+  await assert.rejects(
+    app.invokeRetinaXContractAction('unknown_action'),
+    /Unsupported contract action/
+  );
+  await assert.rejects(
+    app.invokeRetinaXContractAction('grant_access'),
+    /No deployed address configured for vision_records/
+  );
 });

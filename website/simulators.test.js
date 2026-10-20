@@ -51,7 +51,10 @@ class MockElement {
     this.className = className;
     this.classList = new MockClassList(this);
     if (className) {
-      className.split(/\s+/).filter(Boolean).forEach((c) => this.classList.classes.add(c));
+      className
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((c) => this.classList.classes.add(c));
     }
     this.dataset = {};
     this.attributes = {};
@@ -221,7 +224,10 @@ describe('Interactive Simulator Structure in index.html (#295)', () => {
     assert.match(indexHtml, /id="panel-ai"/);
     assert.match(indexHtml, /id="panel-fhir"/);
     assert.match(indexHtml, /id="panel-fetch"/);
-    assert.match(indexHtml, /class="[^"]*demo-tab-panel[^"]*"[^>]*id="panel-rbac"|id="panel-rbac"[^>]*class="[^"]*demo-tab-panel[^"]*"/);
+    assert.match(
+      indexHtml,
+      /class="[^"]*demo-tab-panel[^"]*"[^>]*id="panel-rbac"|id="panel-rbac"[^>]*class="[^"]*demo-tab-panel[^"]*"/
+    );
   });
 
   test('index.html contains form action buttons for all simulators', () => {
@@ -261,7 +267,11 @@ describe('Interactive Simulator Tab Switching & Keyboard Navigation (#295)', () 
     });
 
     panels = tabNames.map((name, i) => {
-      const panel = getOrCreate(`panel-${name}`, 'div', `demo-tab-panel ${i === 0 ? 'active' : ''}`);
+      const panel = getOrCreate(
+        `panel-${name}`,
+        'div',
+        `demo-tab-panel ${i === 0 ? 'active' : ''}`
+      );
       panel.setAttribute('role', 'tabpanel');
       panel.setAttribute('aria-labelledby', `tab-${name}`);
       if (i !== 0) panel.setAttribute('hidden', '');
@@ -298,7 +308,9 @@ describe('Interactive Simulator Tab Switching & Keyboard Navigation (#295)', () 
     await rbacTab.dispatchEvent({
       type: 'keydown',
       key: 'ArrowRight',
-      preventDefault: () => { defaultPrevented = true; },
+      preventDefault: () => {
+        defaultPrevented = true;
+      },
     });
 
     assert.ok(defaultPrevented);
@@ -311,7 +323,9 @@ describe('Interactive Simulator Tab Switching & Keyboard Navigation (#295)', () 
     await tabs[1].dispatchEvent({
       type: 'keydown',
       key: 'ArrowLeft',
-      preventDefault: () => { defaultPrevented = true; },
+      preventDefault: () => {
+        defaultPrevented = true;
+      },
     });
 
     assert.ok(defaultPrevented);
@@ -378,7 +392,9 @@ describe('RBAC Access Control Simulator Logic (#295)', () => {
     let prevented = false;
     await form.dispatchEvent({
       type: 'submit',
-      preventDefault: () => { prevented = true; },
+      preventDefault: () => {
+        prevented = true;
+      },
     });
 
     assert.ok(prevented);
@@ -579,7 +595,9 @@ describe('Simulator Error States & Resilience (#295)', () => {
     getOrCreate('acuity-slider', 'input').value = '20';
 
     let errorFeedbackMsg = null;
-    global.window.showErrorFeedback = (msg) => { errorFeedbackMsg = msg; };
+    global.window.showErrorFeedback = (msg) => {
+      errorFeedbackMsg = msg;
+    };
 
     delete require.cache[require.resolve('./app.js')];
     const app = require('./app.js');

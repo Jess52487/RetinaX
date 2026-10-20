@@ -70,7 +70,11 @@
         if (toBounds && (seconds === null || seconds > toBounds.end)) return false;
         if (!query) return true;
         const fields = [entry.action, entry.actor];
-        return fields.some((field) => String(field ?? '').toLowerCase().includes(query));
+        return fields.some((field) =>
+          String(field ?? '')
+            .toLowerCase()
+            .includes(query)
+        );
       })
       .sort((a, b) => (Number(b.sequence) || 0) - (Number(a.sequence) || 0));
   }

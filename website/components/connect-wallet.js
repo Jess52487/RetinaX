@@ -94,9 +94,7 @@
         return;
       }
 
-      const displayLabel = this._connected
-        ? this._shortenAddress(this._address)
-        : this._label;
+      const displayLabel = this._connected ? this._shortenAddress(this._address) : this._label;
       const t = (key, vars, fallback) => {
         if (typeof window !== 'undefined' && window.RetinaXI18n && window.RetinaXI18n.t) {
           return window.RetinaXI18n.t(key, vars, fallback);
@@ -104,22 +102,24 @@
         return fallback;
       };
       const ariaLabel = this._connected
-        ? t('wallet.connectedAria', { address: this._address }, 'Wallet connected: ' + this._address)
+        ? t(
+            'wallet.connectedAria',
+            { address: this._address },
+            'Wallet connected: ' + this._address
+          )
         : t('nav.connectWalletAria', {}, 'Connect Stellar Wallet');
 
       this.innerHTML = `
         <button class="connect-wallet-btn ${this._connected ? 'connected' : ''} skeleton-fade-in" type="button" aria-label="${this._connected ? 'Wallet connected: ' + this._address : 'Connect Wallet'}">
           <span class="connect-wallet-icon">
-            ${this._connected
-              ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
-              : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>'
+            ${
+              this._connected
+                ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
+                : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>'
             }
           </span>
           <span class="connect-wallet-label">${displayLabel}</span>
-          ${this._connected
-            ? '<span class="connect-wallet-status-dot"></span>'
-            : ''
-          }
+          ${this._connected ? '<span class="connect-wallet-status-dot"></span>' : ''}
         </button>
       `;
       this._setupListeners();
@@ -131,9 +131,13 @@
         this._handleClick = (e) => {
           e.preventDefault();
           if (this._connected) {
-            this.dispatchEvent(new CustomEvent('wallet-disconnect', { bubbles: true, composed: true }));
+            this.dispatchEvent(
+              new CustomEvent('wallet-disconnect', { bubbles: true, composed: true })
+            );
           } else {
-            this.dispatchEvent(new CustomEvent('wallet-connect', { bubbles: true, composed: true }));
+            this.dispatchEvent(
+              new CustomEvent('wallet-connect', { bubbles: true, composed: true })
+            );
           }
         };
         btn.addEventListener('click', this._handleClick);

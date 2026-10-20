@@ -50,7 +50,10 @@
         this.render();
         this.updateVisibility();
       } catch (err) {
-        console.error('[GlobalSpinner Error Boundary] Attribute change failure:', err, { name, newValue });
+        console.error('[GlobalSpinner Error Boundary] Attribute change failure:', err, {
+          name,
+          newValue,
+        });
       }
     }
 

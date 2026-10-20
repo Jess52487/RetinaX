@@ -91,7 +91,9 @@
   }
 
   function normalizeLanguage(language) {
-    var code = String(language || '').trim().toLowerCase();
+    var code = String(language || '')
+      .trim()
+      .toLowerCase();
     if (!code && typeof navigator !== 'undefined' && navigator.language) {
       code = String(navigator.language).toLowerCase();
     }
@@ -103,7 +105,13 @@
   }
 
   function isRtlLanguage(language) {
-    return RTL_LANGUAGES.indexOf(String(language || '').toLowerCase().split('-')[0]) !== -1;
+    return (
+      RTL_LANGUAGES.indexOf(
+        String(language || '')
+          .toLowerCase()
+          .split('-')[0]
+      ) !== -1
+    );
   }
 
   function directionFor(language, meta) {
@@ -202,7 +210,10 @@
     var root = scope || document;
 
     var titleKey = 'meta.title';
-    if (lookup(catalogs.get(currentLanguage), titleKey) || lookup(catalogs.get(DEFAULT_LANGUAGE), titleKey)) {
+    if (
+      lookup(catalogs.get(currentLanguage), titleKey) ||
+      lookup(catalogs.get(DEFAULT_LANGUAGE), titleKey)
+    ) {
       document.title = t(titleKey);
     }
     var descriptionKey = 'meta.description';

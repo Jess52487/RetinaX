@@ -27,10 +27,14 @@ global.HTMLElement = function () {
     },
     contains: (c) => this.className.split(/\s+/).includes(c),
   };
-  this.setAttribute = (k, v) => { this.attributes[k] = String(v); };
+  this.setAttribute = (k, v) => {
+    this.attributes[k] = String(v);
+  };
   this.getAttribute = (k) => (this.attributes[k] !== undefined ? this.attributes[k] : null);
   this.hasAttribute = (k) => this.attributes[k] !== undefined;
-  this.removeAttribute = (k) => { delete this.attributes[k]; };
+  this.removeAttribute = (k) => {
+    delete this.attributes[k];
+  };
   this.appendChild = (child) => {
     this.children.push(child);
     child.parentNode = this;
@@ -68,8 +72,12 @@ global.document = {
 
 global.customElements = {
   registry: new Map(),
-  define: function (name, cls) { this.registry.set(name, cls); },
-  get: function (name) { return this.registry.get(name); },
+  define: function (name, cls) {
+    this.registry.set(name, cls);
+  },
+  get: function (name) {
+    return this.registry.get(name);
+  },
 };
 
 const PatientCard = require('./patient-card.js');
@@ -129,7 +137,10 @@ describe('PatientCard Loading Skeleton State (#292)', () => {
 
     pc.showLoading();
 
-    assert.ok(mount.children[0].classList.contains('is-loading'), 'Card should have is-loading class');
+    assert.ok(
+      mount.children[0].classList.contains('is-loading'),
+      'Card should have is-loading class'
+    );
     const html = mount.children[0].innerHTML;
     assert.match(html, /pc-skel-circle/, 'Contains circular avatar placeholder');
     assert.match(html, /pc-skel-title/, 'Contains title placeholder');
@@ -145,7 +156,10 @@ describe('PatientCard Loading Skeleton State (#292)', () => {
     assert.ok(mount.children[0].classList.contains('is-loading'));
 
     pc.update({ patientName: 'Jane Smith', age: 35 });
-    assert.ok(!mount.children[0].classList.contains('is-loading'), 'is-loading removed after update');
+    assert.ok(
+      !mount.children[0].classList.contains('is-loading'),
+      'is-loading removed after update'
+    );
     assert.match(mount.children[0].innerHTML, /Jane Smith/);
   });
 });
