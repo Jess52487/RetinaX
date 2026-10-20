@@ -362,13 +362,14 @@
       <div class="patient-card__header">
         <div class="patient-card__avatar" aria-hidden="true">!</div>
         <div class="patient-card__identity">
-          <div class="patient-card__name">Error</div>
-          <div class="patient-card__meta">Failed to load patient data</div>
+          <div class="patient-card__name">Unable to load patient card</div>
+          <div class="patient-card__meta">Error encountered during rendering</div>
         </div>
       </div>
       <div class="patient-card__error" role="alert">
         <span class="patient-card__error-icon">⚠️</span>
         <span>${escHtml(message || 'Could not load patient data.')}</span>
+        <button type="button" class="patient-card__retry-btn" style="margin-left:auto;padding:4px 8px;border-radius:4px;border:1px solid currentColor;background:transparent;cursor:pointer;font-size:12px;">Retry</button>
       </div>
     `.trim();
   }
@@ -453,23 +454,28 @@
    * @param {Object} cfg  Resolved configuration
    */
   PatientCard.prototype._render = function (cfg) {
-    const mount = this._mount;
+    try {
+      const mount = this._mount;
 
-    /* Create or reuse the card wrapper */
-    let card = mount.querySelector('.patient-card-component');
-    if (!card) {
-      card = document.createElement('div');
-      card.className = 'patient-card-component';
-      mount.appendChild(card);
+      /* Create or reuse the card wrapper */
+      let card = mount.querySelector('.patient-card-component');
+      if (!card) {
+        card = document.createElement('div');
+        card.className = 'patient-card-component';
+        mount.appendChild(card);
+      }
+      this._card = card;
+
+      /* Set ARIA role for the card */
+      card.setAttribute('role', 'region');
+      card.setAttribute('aria-label', `Patient card: ${cfg.patientName}`);
+
+      /* Inject content */
+      card.innerHTML = buildHTML(cfg);
+    } catch (err) {
+      console.error('[PatientCard Error Boundary] Render failure:', err, { config: cfg });
+      this.showError('An unexpected error occurred while displaying patient data.');
     }
-    this._card = card;
-
-    /* Set ARIA role for the card */
-    card.setAttribute('role', 'region');
-    card.setAttribute('aria-label', `Patient card: ${cfg.patientName}`);
-
-    /* Inject content */
-    card.innerHTML = buildHTML(cfg);
   };
 
   /**
@@ -483,13 +489,24 @@
   };
 
   /**
-   * Show an error state with an optional message.
+   * Show an error state with an optional message and recovery retry action.
    * @param {string} [message]
    */
   PatientCard.prototype.showError = function (message) {
     if (!this._card) return;
     this._card.classList.remove('is-loading');
     this._card.innerHTML = buildErrorHTML(message);
+
+    const retryBtn = this._card.querySelector('.patient-card__retry-btn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        try {
+          this._render(this._cfg);
+        } catch (retryErr) {
+          console.error('[PatientCard Error Boundary] Retry failure:', retryErr);
+        }
+      });
+    }
   };
 
   /**
@@ -497,10 +514,15 @@
    * @param {Object} newOpts  Partial or complete options object
    */
   PatientCard.prototype.update = function (newOpts) {
-    if (!this._card) return;
-    Object.assign(this._cfg, newOpts);
-    this._card.classList.remove('is-loading');
-    this._card.innerHTML = buildHTML(this._cfg);
+    try {
+      if (!this._card) return;
+      Object.assign(this._cfg, newOpts);
+      this._card.classList.remove('is-loading');
+      this._card.innerHTML = buildHTML(this._cfg);
+    } catch (err) {
+      console.error('[PatientCard Error Boundary] Update failure:', err, { newOpts });
+      this.showError('Failed to update patient card information.');
+    }
   };
 
   /**

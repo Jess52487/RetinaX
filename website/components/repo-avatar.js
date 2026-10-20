@@ -359,14 +359,15 @@
         <div class="repo-avatar__banner-left">
           <div class="repo-avatar__org-icon" aria-hidden="true">!</div>
           <div class="repo-avatar__repo-path">
-            <span class="repo-avatar__org-name">Error</span>
-            <span class="repo-avatar__repo-name">Failed to load</span>
+            <span class="repo-avatar__org-name">Unable to load</span>
+            <span class="repo-avatar__repo-name">Repository card</span>
           </div>
         </div>
       </div>
       <div class="repo-avatar__error" role="alert">
         <span class="repo-avatar__error-icon">⚠️</span>
         <span>${escHtml(message || 'Could not load repository data.')}</span>
+        <button type="button" class="repo-avatar__retry-btn" style="margin-left:auto;padding:4px 8px;border-radius:4px;border:1px solid currentColor;background:transparent;cursor:pointer;font-size:12px;">Retry</button>
       </div>
     `.trim();
   }
@@ -458,23 +459,28 @@
    * @param {Object} cfg  Resolved configuration
    */
   RepoAvatar.prototype._render = function (cfg) {
-    const mount = this._mount;
+    try {
+      const mount = this._mount;
 
-    /* Create or reuse the card wrapper */
-    let card = mount.querySelector('.repo-avatar-component');
-    if (!card) {
-      card = document.createElement('div');
-      card.className = 'repo-avatar-component';
-      mount.appendChild(card);
+      /* Create or reuse the card wrapper */
+      let card = mount.querySelector('.repo-avatar-component');
+      if (!card) {
+        card = document.createElement('div');
+        card.className = 'repo-avatar-component';
+        mount.appendChild(card);
+      }
+      this._card = card;
+
+      /* Set ARIA role for the card */
+      card.setAttribute('role', 'region');
+      card.setAttribute('aria-label', `Repository card: ${cfg.org}/${cfg.repo}`);
+
+      /* Inject content */
+      card.innerHTML = buildHTML(cfg);
+    } catch (err) {
+      console.error('[RepoAvatar Error Boundary] Render failure:', err, { config: cfg });
+      this.showError('An unexpected error occurred while displaying repository data.');
     }
-    this._card = card;
-
-    /* Set ARIA role for the card */
-    card.setAttribute('role', 'region');
-    card.setAttribute('aria-label', `Repository card: ${cfg.org}/${cfg.repo}`);
-
-    /* Inject content */
-    card.innerHTML = buildHTML(cfg);
   };
 
   /**
@@ -488,13 +494,24 @@
   };
 
   /**
-   * Show an error state with an optional message.
+   * Show an error state with an optional message and recovery retry action.
    * @param {string} [message]
    */
   RepoAvatar.prototype.showError = function (message) {
     if (!this._card) return;
     this._card.classList.remove('is-loading');
     this._card.innerHTML = buildErrorHTML(message);
+
+    const retryBtn = this._card.querySelector('.repo-avatar__retry-btn');
+    if (retryBtn) {
+      retryBtn.addEventListener('click', () => {
+        try {
+          this._render(this._cfg);
+        } catch (retryErr) {
+          console.error('[RepoAvatar Error Boundary] Retry failure:', retryErr);
+        }
+      });
+    }
   };
 
   /**
@@ -502,10 +519,15 @@
    * @param {Object} newOpts  Partial or complete options object
    */
   RepoAvatar.prototype.update = function (newOpts) {
-    if (!this._card) return;
-    Object.assign(this._cfg, newOpts);
-    this._card.classList.remove('is-loading');
-    this._card.innerHTML = buildHTML(this._cfg);
+    try {
+      if (!this._card) return;
+      Object.assign(this._cfg, newOpts);
+      this._card.classList.remove('is-loading');
+      this._card.innerHTML = buildHTML(this._cfg);
+    } catch (err) {
+      console.error('[RepoAvatar Error Boundary] Update failure:', err, { newOpts });
+      this.showError('Failed to update repository card information.');
+    }
   };
 
   /**

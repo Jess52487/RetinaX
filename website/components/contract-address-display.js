@@ -19,7 +19,7 @@
   }
   class ContractAddressDisplay extends ElementBase {
     static get observedAttributes() {
-      return ['address'];
+      return ['address', 'loading'];
     }
     connectedCallback() {
       this.render();
@@ -28,24 +28,27 @@
       if (this.isConnected) this.render();
     }
     render() {
+      if (this.hasAttribute('loading')) {
+        this.innerHTML =
+          '<div class="contract-address-display__skeleton is-loading" role="status" aria-busy="true" aria-label="Loading contract address...">' +
+          '<span class="skeleton-line skeleton-pill" style="width: 140px; height: 26px; border-radius: 9999px;"></span>' +
+          '</div>';
+        return;
+      }
       const address =
         (this.getAttribute && this.getAttribute('address')) || this.textContent.trim();
       if (!address) return;
       this._address = address;
       const copyLabel = t('common.copyContractAddress', 'Copy contract address');
       this.innerHTML =
-        '<button type="button" class="contract-address-display__button" aria-label="' +
-        copyLabel +
-        '" title="' +
-        copyLabel +
-        '">' +
+        '<button type="button" class="contract-address-display__button skeleton-fade-in" aria-label="Copy contract address" title="Copy contract address">' +
         '<span class="contract-address-display__value">' +
         shorten(address, 6, 6) +
         '</span>' +
         '<span class="contract-address-display__status" aria-live="polite"></span></button>';
       this._button = this.querySelector('button');
       this._status = this.querySelector('.contract-address-display__status');
-      this._button.addEventListener('click', () => this.copy());
+      if (this._button) this._button.addEventListener('click', () => this.copy());
     }
     async copy() {
       try {
