@@ -1,0 +1,70 @@
+/* ==========================================================================
+   RetinaX — Permissions Toggle
+   Styles for the <permissions-toggle> component (permissions-toggle.js).
+   Uses the shared theme tokens from styles.css, so it follows light and dark mode.
+   ========================================================================== */
+
+permissions-toggle {
+  display: inline-block;
+}
+
+.permissions-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.25rem 0;
+  border: none;
+  background: none;
+  color: var(--text-main);
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.permissions-toggle__track {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 1.4rem;
+  border-radius: 999px;
+  background-color: var(--border-color);
+  transition: background-color 0.2s ease;
+}
+
+.permissions-toggle__thumb {
+  position: absolute;
+  top: 0.2rem;
+  left: 0.2rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background-color: var(--text-white);
+  box-shadow: var(--shadow-sm);
+  transition: transform 0.2s ease;
+}
+
+.permissions-toggle[aria-checked='true'] .permissions-toggle__track {
+  background-color: var(--clinical-teal);
+}
+
+.permissions-toggle[aria-checked='true'] .permissions-toggle__thumb {
+  transform: translateX(1.1rem);
+}
+
+.permissions-toggle:focus-visible .permissions-toggle__track {
+  outline: 2px solid var(--clinical-teal);
+  outline-offset: 2px;
+}
+
+.permissions-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .permissions-toggle__track,
+  .permissions-toggle__thumb {
+    transition: none;
+  }
+}

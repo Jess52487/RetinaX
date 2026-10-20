@@ -168,7 +168,10 @@ const ToastSystem = {
     if (type === 'pending') {
       icon.innerHTML = '<span class="loading-spinner"></span>';
     } else if (type === 'success') {
-      icon.innerHTML = '&#10003;';
+      icon.innerHTML =
+        '<svg class="toast-checkmark" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        '<circle class="toast-checkmark-circle" cx="12" cy="12" r="10" pathLength="1"/>' +
+        '<polyline class="toast-checkmark-tick" points="7 12.5 10.5 16 17 8.5" pathLength="1"/></svg>';
     } else if (type === 'error') {
       icon.innerHTML = '&#10007;';
     } else if (type === 'warning') {
