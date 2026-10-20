@@ -39,7 +39,7 @@ Any off-chain code that matched on error code `3` or `7` should now match on `10
 
 ## Extending Errors
 
-Contracts that need domain-specific error codes should define them in their own `#[contracterror]` enum starting at code **100** to avoid collisions with the common set.
+Contracts that need domain-specific error codes define them in their own `#[contracterror]` enum. In Soroban, contract error codes are scoped to the executing contract; contracts may use dedicated domain error types or reserve error code offsets starting at **100+** when sharing namespace boundaries with `CommonError`.
 
 ```rust
 #[contracterror]
@@ -52,3 +52,35 @@ pub enum VisionError {
     RecordLimitExceeded = 101,
 }
 ```
+
+## Contract-Specific Error References
+
+### Access Control (`AccessControlError`)
+
+The `access_control` contract defines domain-specific error codes for fine-grained role-based (RBAC) and attribute-based access control (ABAC).
+
+| Code | Variant                   | When it is returned                                                                                    |
+|------|---------------------------|--------------------------------------------------------------------------------------------------------|
+| 1    | `Unauthorized`            | Caller lacks administrative privileges or the required permissions to perform the operation.           |
+| 2    | `InvalidInput`            | Provided string parameter or identifier is empty or exceeds length limits (`MAX_STRING_LEN`).           |
+| 3    | `NotFound`                | The specified role assignment, delegation, user credential, policy, or entity was not found in storage.|
+| 4    | `DelegationExpired`       | Requested delegation or scoped permission grant has reached its expiration timestamp or is invalid.     |
+| 5    | `Paused`                  | The access control micro-contract is temporarily paused by the emergency admin.                        |
+| 6    | `AlreadyExists`           | The target user already belongs to the group, holds the credential, or the entity already exists.      |
+| 7    | `AlreadyInitialized`      | `initialize()` is invoked on an access control contract instance that has already been initialized.     |
+| 8    | `DelegationDepthExceeded` | The delegation chain depth exceeds the configured maximum allowed limit (`MAX_DEL_DEPTH`).            |
+
+### Clinical Records (`ContractError`)
+
+The `clinical_records` contract defines error codes for managing eye examination and ophthalmic prescription lifecycles.
+
+| Code | Variant              | When it is returned                                                                                    |
+|------|----------------------|--------------------------------------------------------------------------------------------------------|
+| 1    | `AlreadyInitialized` | `initialize()` was called more than once on the clinical records contract instance.                    |
+| 2    | `NotInitialized`     | A function requiring prior configuration was invoked before `initialize()` completed.                 |
+| 3    | `Unauthorized`       | The caller is not authorized (e.g. not admin, not assigned practitioner, or not patient record owner). |
+| 4    | `InvalidInput`       | An input failed validation (e.g. empty string, string exceeding character bounds, or malformed data).  |
+| 5    | `InvalidRecordType`  | Reserved for unsupported clinical record types.                                                        |
+| 6    | `RecordNotFound`     | No examination or prescription record exists for the given record ID.                                  |
+| 7    | `InvalidPhase`       | The prescription lifecycle operation was called out of order (e.g. committing an un-prepared record).  |
+
