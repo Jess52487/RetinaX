@@ -1,4 +1,5 @@
 #![allow(clippy::too_many_arguments)]
+#![allow(deprecated)]
 
 pub mod aggregation;
 pub mod differential_privacy;
@@ -67,6 +68,7 @@ pub enum ContractError {
 }
 
 #[contractclient(name = "MetricSourceClient")]
+#[allow(dead_code)]
 trait MetricSourceInterface {
     fn read_metric(env: Env, kind: Symbol, dims: MetricDimensions) -> MetricValue;
 }
