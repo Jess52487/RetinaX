@@ -7,6 +7,9 @@ use crate::types::{
     EyeExamination, IntraocularPressure, OptFundusPhotography, OptPhysicalMeasurement,
     OptRetinalImaging, OptVisualField, PhysicalMeasurement, SlitLampFindings, VisualAcuity,
 };
+use fhir::types::{Observation, ObservationStatus};
+use fhir::validation;
+use soroban_sdk::{symbol_short, Address, Env, String, Symbol, Vec};
 use access_control::Permission;
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
 
@@ -224,4 +227,97 @@ pub fn get_eye_examination(
             .get(&(EXAM_KEY, record_id))
             .ok_or(ContractError::RecordNotFound)
     }
+}
+
+/// Map an [`EyeExamination`] to FHIR R4 [`Observation`] resources.
+///
+/// Emits one observation per measurement group, each with:
+/// * canonical LOINC system URI (`http://loinc.org`)
+/// * `status` = `final`
+/// * `subject` = `subject_id`
+/// * `effective[x]` = the examination's IOP timestamp
+///
+/// Observations emitted:
+/// 1. Uncorrected visual acuity, right eye — LOINC `98499-7`
+/// 2. Uncorrected visual acuity, left eye — LOINC `98498-9`
+/// 3. Best-corrected visual acuity (right/left) when recorded — LOINC `65893-0` / `65897-1`
+/// 4. Intraocular pressure — LOINC `56844-4`
+/// 5. Eye physical examination narrative (clinical notes) — LOINC `29271-4`
+pub fn eye_examination_to_fhir(
+    env: &Env,
+    exam: &EyeExamination,
+    subject_id: String,
+) -> Vec<Observation> {
+    let loinc = String::from_str(env, validation::LOINC_SYSTEM);
+    let effective = exam.iop.timestamp;
+    let mut observations = Vec::new(env);
+
+    let mut push = |id: String, code: &str, value: String| {
+        observations.push_back(Observation {
+            id,
+            status: ObservationStatus::Final,
+            code_system: loinc.clone(),
+            code_value: String::from_str(env, code),
+            subject_id: subject_id.clone(),
+            value,
+            effective_datetime: effective,
+        });
+    };
+
+    push(
+        String::from_str(
+            env,
+            &alloc::format!("exam-{}-va-uncorr-right", exam.record_id),
+        ),
+        validation::LOINC_VISUAL_ACUITY_UNCORR_RIGHT,
+        exam.visual_acuity.uncorrected.right_eye.clone(),
+    );
+    push(
+        String::from_str(
+            env,
+            &alloc::format!("exam-{}-va-uncorr-left", exam.record_id),
+        ),
+        validation::LOINC_VISUAL_ACUITY_UNCORR_LEFT,
+        exam.visual_acuity.uncorrected.left_eye.clone(),
+    );
+
+    if let OptPhysicalMeasurement::Some(corrected) = &exam.visual_acuity.corrected {
+        push(
+            String::from_str(
+                env,
+                &alloc::format!("exam-{}-va-best-corr-right", exam.record_id),
+            ),
+            validation::LOINC_VISUAL_ACUITY_BEST_CORR_RIGHT,
+            corrected.right_eye.clone(),
+        );
+        push(
+            String::from_str(
+                env,
+                &alloc::format!("exam-{}-va-best-corr-left", exam.record_id),
+            ),
+            validation::LOINC_VISUAL_ACUITY_BEST_CORR_LEFT,
+            corrected.left_eye.clone(),
+        );
+    }
+
+    push(
+        String::from_str(env, &alloc::format!("exam-{}-iop", exam.record_id)),
+        validation::LOINC_IOP,
+        String::from_str(
+            env,
+            &alloc::format!(
+                "L:{} R:{} ({})",
+                exam.iop.left_eye,
+                exam.iop.right_eye,
+                exam.iop.method
+            ),
+        ),
+    );
+    push(
+        String::from_str(env, &alloc::format!("exam-{}-narrative", exam.record_id)),
+        validation::LOINC_EYE_PHYSICAL_EXAM,
+        exam.clinical_notes.clone(),
+    );
+
+    observations
 }
