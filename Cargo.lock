@@ -606,6 +606,7 @@ version = "1.2.2"
 dependencies = [
  "fhir",
  "access_control",
+ "serde_json",
  "soroban-sdk",
 ]
 

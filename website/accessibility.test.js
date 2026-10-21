@@ -35,7 +35,10 @@ describe('WCAG 2.1 Accessibility Compliance (#289)', () => {
 
   test('all form inputs have associated labels and ARIA descriptors', () => {
     assert.match(html, /<label[^>]*for="input-patient-addr"/i);
-    assert.match(html, /<label[^>]*for="select-doctor"/i);
+    assert.match(html, /<label[^>]*for="rbac-action"/i);
+    assert.match(html, /<label[^>]*for="rbac-permission"/i);
+    assert.match(html, /<label[^>]*for="rbac-role"/i);
+    assert.match(html, /<label[^>]*for="wallet-network-select"/i);
     assert.match(html, /<label[^>]*for="dur-slider"/i);
     assert.match(html, /<label[^>]*for="acuity-slider"/i);
     assert.match(html, /<label[^>]*for="select-ai-status"/i);
