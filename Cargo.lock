@@ -1203,7 +1203,9 @@ name = "governor"
 version = "1.2.2"
 dependencies = [
  "common",
+ "proptest",
  "soroban-sdk",
+ "timelock",
 ]
 
 [[package]]
