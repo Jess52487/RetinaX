@@ -189,6 +189,13 @@ pub fn set_examination_patient(
     Ok(())
 }
 
+/// Returns the patient linked to the examination stored under `record_id`, if one was set.
+pub fn get_examination_patient(env: &Env, record_id: u64) -> Option<Address> {
+    env.storage()
+        .persistent()
+        .get(&(EXAM_PATIENT_KEY, record_id))
+}
+
 /// Returns the examination stored under `record_id`, subject to read access checks.
 ///
 /// # Errors
@@ -202,10 +209,7 @@ pub fn get_eye_examination(
 
     if get_access_control_contract(env).is_some() {
         let is_reader = check_permission(env, &caller, Permission::ReadAnyRecord)?;
-        let is_patient = env
-            .storage()
-            .persistent()
-            .get::<_, Address>(&(EXAM_PATIENT_KEY, record_id))
+        let is_patient = get_examination_patient(env, record_id)
             .map(|p| p == caller)
             .unwrap_or(false);
 

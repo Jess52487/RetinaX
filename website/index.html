@@ -70,7 +70,7 @@
         <button class="btn btn-secondary theme-toggle" id="theme-toggle" type="button" aria-pressed="false" aria-label="Switch to dark mode" data-i18n-aria-label="nav.themeToggleToDark" data-i18n="nav.themeDark">🌙 Dark mode</button>
         <div class="network-pill" role="status" aria-label="Network status: Stellar Testnet" data-i18n-aria-label="nav.networkStatus">
           <span class="status-dot" aria-hidden="true"></span>
-          <span data-i18n="nav.network">Stellar Testnet</span>
+          <span id="network-pill-label" data-i18n="nav.network">Stellar Testnet</span>
         </div>
         <connect-wallet-button id="btn-connect-wallet" label="Connect Wallet" network="Stellar Testnet"></connect-wallet-button>
         <a href="https://github.com/RetinaX-Org/RetinaX" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" aria-label="View RetinaX on GitHub (opens in new tab)">
@@ -238,30 +238,52 @@
         <div class="demo-body">
           <!-- Panel 1: RBAC Access Control -->
           <div class="demo-tab-panel active" id="panel-rbac" role="tabpanel" aria-labelledby="tab-rbac" tabindex="0">
-            <form class="control-panel" aria-label="Role-Based Access Control Simulation Form">
+            <form class="control-panel" id="rbac-form" aria-label="Role-Based Access Control Contract Form" data-i18n-aria-label="demo.rbacFormAria">
               <h3 data-i18n="demo.rbacTitle">Role-Based Access Control (RBAC)</h3>
-              <p style="color: var(--text-muted); font-size: 0.9rem;" data-i18n="demo.rbacDesc">Simulate patient access permission grants enforced by Soroban <code>require_auth()</code>.</p>
-              
-              <div class="form-group">
-                <label class="form-label" for="input-patient-addr" data-i18n="demo.patientAddress">Patient Stellar Address</label>
-                <input type="text" id="input-patient-addr" name="patientAddress" class="form-input" value="GDC...PATIENT_KEY_99X" required aria-required="true" aria-label="Patient Stellar Address" data-i18n-aria-label="demo.patientAddress">
-              </div>
+              <p style="color: var(--text-muted); font-size: 0.9rem;" data-i18n="demo.rbacDesc">Read and assign roles on the deployed access_control contract through Soroban RPC.</p>
 
               <div class="form-group">
-                <label class="form-label" for="select-doctor" data-i18n="demo.targetDoctor">Target Doctor / Clinic</label>
-                <select class="form-select" required aria-required="true" id="select-doctor" name="targetDoctor" aria-label="Target Doctor or Clinic" data-i18n-aria-label="demo.targetDoctor">
-                  <option value="GAB...DR_SMITH_OPTOMETRY" data-i18n="demo.doctorAuthorized">Dr. Smith Optometry Clinic (Authorized)</option>
-                  <option value="GCD...VISION_RESEARCH_LAB" data-i18n="demo.doctorPending">Vision Research Lab (Pending)</option>
-                  <option value="GXX...UNAUTHORIZED_THIRD_PARTY" data-i18n="demo.doctorBlocked">Unauthorized Provider (Block)</option>
+                <label class="form-label" for="rbac-action" data-i18n="demo.rbacAction">Contract call</label>
+                <select class="form-select" id="rbac-action" name="rbacAction">
+                  <option value="get_role" data-i18n="demo.rbacActionGetRole">get_role: read a user's role</option>
+                  <option value="has_permission" data-i18n="demo.rbacActionCheck">has_permission: check a permission</option>
+                  <option value="assign_role" data-i18n="demo.rbacActionAssign">assign_role: assign a role (signed with Freighter)</option>
                 </select>
               </div>
 
               <div class="form-group">
-                <label class="form-label" for="dur-slider"><span data-i18n="demo.grantDuration">Grant Duration:</span> <span id="dur-val">24</span> <span data-i18n="demo.hours">Hours</span></label>
-                <input type="range" class="slider-input" min="1" max="168" value="24" id="dur-slider" name="durationHours" aria-label="Grant Duration in Hours" aria-valuemin="1" aria-valuemax="168" aria-valuenow="24" aria-valuetext="24 Hours">
+                <label class="form-label" for="input-patient-addr" data-i18n="demo.rbacUserAddress">User Stellar Address</label>
+                <input type="text" id="input-patient-addr" name="userAddress" class="form-input" placeholder="G..." required aria-required="true" autocomplete="off" spellcheck="false">
               </div>
 
-              <button type="submit" class="btn btn-primary" id="btn-grant-access" aria-label="Execute Soroban Authentication" data-i18n="demo.executeAuth">Execute Soroban Auth</button>
+              <div class="form-group" id="rbac-permission-group" hidden>
+                <label class="form-label" for="rbac-permission" data-i18n="demo.rbacPermission">Permission</label>
+                <select class="form-select" id="rbac-permission" name="permission">
+                  <option value="1">ReadAnyRecord</option>
+                  <option value="2">WriteRecord</option>
+                  <option value="3">ManageAccess</option>
+                  <option value="4">ManageUsers</option>
+                  <option value="5">SystemAdmin</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="rbac-role-group" hidden>
+                <label class="form-label" for="rbac-role" data-i18n="demo.rbacRole">Role</label>
+                <select class="form-select" id="rbac-role" name="role">
+                  <option value="1">Patient</option>
+                  <option value="2">Staff</option>
+                  <option value="3">Optometrist</option>
+                  <option value="4">Ophthalmologist</option>
+                  <option value="5">Admin</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="rbac-duration-group" hidden>
+                <label class="form-label" for="dur-slider"><span data-i18n="demo.rbacExpires">Role expires in:</span> <span id="dur-val">24</span> <span data-i18n="demo.hours">Hours</span></label>
+                <input type="range" class="slider-input" min="1" max="168" value="24" id="dur-slider" name="durationHours" aria-valuemin="1" aria-valuemax="168" aria-valuenow="24" aria-valuetext="24 Hours">
+              </div>
+
+              <button type="submit" class="btn btn-primary" id="btn-grant-access" data-i18n="demo.rbacExecute">Call Contract</button>
             </form>
 
             <div class="code-console">
@@ -269,19 +291,8 @@
                 <span data-i18n="demo.rbacConsoleTitle">SOROBAN CONTRACT EXECUTION LOG</span>
                 <span data-i18n="demo.consoleLive">• LIVE STATE</span>
               </div>
-              <pre id="preview-rbac-code">// Soroban Call: contracts/vision_records::grant_access()
-fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
-    patient.require_auth(); // Validated GDC...PATIENT_KEY_99X
-    
-    let grant = AccessGrant {
-        granted_at: env.ledger().timestamp(),
-        expires_at: env.ledger().timestamp() + ttl * 3600,
-        active: true,
-    };
-    
-    env.storage().persistent().set(&(patient, doctor), &grant);
-    env.events().publish(("access", "granted"), (patient, doctor));
-}</pre>
+              <pre id="preview-rbac-code" aria-live="polite">// Soroban RPC: contracts/access_control::get_role()
+get_role(user: G...)</pre>
             </div>
           </div>
 
@@ -608,13 +619,25 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
 
   <!-- Modal Base (<modal-dialog> Custom Web Component) -->
   <modal-dialog id="connect-wallet-dialog" title="Connect Wallet" data-i18n-title="wallet.title" size="sm">
-    <div class="wallet-option" onclick="alert('Simulated: Connecting Freighter...')">
+    <div class="form-group">
+      <label class="form-label" for="wallet-network-select" data-i18n="wallet.network">Network</label>
+      <select class="form-select" id="wallet-network-select" name="network">
+        <option value="testnet" data-i18n="wallet.testnet">Stellar Testnet</option>
+        <option value="mainnet" data-i18n="wallet.mainnet">Stellar Mainnet</option>
+      </select>
+    </div>
+    <div class="wallet-option" id="wallet-option-freighter" role="button" tabindex="0">
       <div class="wallet-info">
         <div class="wallet-icon">F</div>
         <span class="wallet-name" data-i18n="wallet.freighter">Freighter Wallet</span>
       </div>
       <span class="wallet-badge" data-i18n="wallet.recommended">Recommended</span>
     </div>
+    <p class="modal-footer-text" id="wallet-install-prompt" hidden>
+      <span data-i18n="wallet.notInstalled">Freighter was not detected in this browser.</span>
+      <a href="https://freighter.app/" target="_blank" rel="noopener noreferrer" data-i18n="wallet.install">Install Freighter</a>
+    </p>
+    <p class="modal-footer-text" id="wallet-status" role="status" aria-live="polite" hidden></p>
     <div class="wallet-option" onclick="alert('Simulated: Connecting Albedo...')">
       <div class="wallet-info">
         <div class="wallet-icon">A</div>
@@ -657,7 +680,17 @@ fn grant_access(env: Env, patient: Address, doctor: Address, ttl: u64) {
       key_manager: '',
       vision_records: ''
     }, window.RETINAX_CONTRACTS || {});
+    // Per-network settings for wallet-signed Soroban calls, since contract IDs differ per network.
+    // An empty rpcUrl falls back to the Soroban RPC URL configured in Freighter.
+    window.RETINAX_DEPLOYMENTS = Object.assign({
+      testnet: { rpcUrl: 'https://soroban-testnet.stellar.org', contracts: { access_control: '' } },
+      mainnet: { rpcUrl: '', contracts: { access_control: '' } }
+    }, window.RETINAX_DEPLOYMENTS || {});
   </script>
+
+  <!-- Freighter wallet API (window.freighterApi) and Stellar SDK (window.StellarSdk) -->
+  <script src="https://cdn.jsdelivr.net/npm/@stellar/freighter-api@6.0.1/build/index.min.js" integrity="sha384-PBwq0JVfqy16Z6jvKJPx93jpStXbwF2oWvsRTODkvE/3hOX5zmLvAuMiKgAaxe2b" crossorigin="anonymous" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@17.2.1/dist/stellar-sdk.min.js" integrity="sha384-z72iOjWW+lhGmZrU900uVQX76pdHCbGOL7YyFgTd/mzXLbHQtQuUrxGOfETZJM/D" crossorigin="anonymous" defer></script>
 
   <!-- RepoAvatar Standalone Component -->
   <script src="components/repo-avatar.js"></script>

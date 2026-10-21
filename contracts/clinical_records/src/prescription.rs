@@ -4,12 +4,29 @@ use crate::admin::{
 };
 use crate::errors::ContractError;
 use crate::examination::validate_string;
-use crate::types::{LensType, OptionalContactLensData, Prescription, PrescriptionData};
+use crate::types::{
+    BatchPrescriptionInput, LensType, OptionalContactLensData, Prescription, PrescriptionData,
+};
 use access_control::Permission;
-use soroban_sdk::{symbol_short, Address, Env, String, Symbol};
+use soroban_sdk::{symbol_short, Address, Env, String, Symbol, Vec};
 
 pub const PRESCRIPTION_KEY: Symbol = symbol_short!("RX");
 pub const RX_COUNTER: Symbol = symbol_short!("RX_CTR");
+const PENDING_RX_KEY: Symbol = symbol_short!("P_ADD_RX");
+
+/// Largest number of prescriptions one batch call accepts.
+///
+/// A committed batch of `n` writes `2n` ledger entries (n persistent writes plus n temporary
+/// removals) and emits `n` events, so 10 keeps every batch far below the per-transaction limits
+/// of 200 written entries and 16 KiB of events.
+pub const MAX_PRESCRIPTION_BATCH: u32 = 10;
+
+/// How long a committed prescription stays valid: one year, in seconds.
+const PRESCRIPTION_VALIDITY_SECS: u64 = 31_536_000;
+
+/// A prepared prescription waiting in temporary storage: patient, provider, refraction data,
+/// and the ledger timestamp of the prepare step.
+type PendingPrescription = (Address, Address, PrescriptionData, u64);
 
 /// Checks the length of each refraction field (sphere, cylinder, axis, add, and pupillary
 /// distance) in a prescription.
@@ -39,34 +56,60 @@ pub fn prepare_add_prescription(
     provider: Address,
     prescription_data: PrescriptionData,
 ) -> Result<u64, ContractError> {
-    require_initialized(env)?;
-
-    if get_access_control_contract(env).is_some() {
-        if !check_permission(env, &caller, Permission::WriteRecord)? {
-            return Err(ContractError::Unauthorized);
-        }
-    } else {
-        require_authorized_vision_records(env, &caller)?;
-    }
-
+    require_write_access(env, &caller)?;
     validate_prescription_data(&prescription_data)?;
-    let next_id = env
-        .storage()
-        .instance()
-        .get(&RX_COUNTER)
-        .unwrap_or(0u64)
-        .saturating_add(1u64);
-    env.storage().instance().set(&RX_COUNTER, &next_id);
-    let prep_key = (symbol_short!("P_ADD_RX"), next_id);
-    let prep = (
-        patient.clone(),
-        provider.clone(),
+
+    let rx_id = get_prescription_count(env).saturating_add(1);
+    env.storage().instance().set(&RX_COUNTER, &rx_id);
+    store_pending(
+        env,
+        rx_id,
+        patient,
+        provider,
         prescription_data,
         env.ledger().timestamp(),
     );
-    env.storage().temporary().set(&prep_key, &prep);
-    crate::events::publish_prescription_prepared(env, next_id, patient, provider);
-    Ok(next_id)
+    Ok(rx_id)
+}
+
+/// Prepares every prescription in `prescriptions` and returns their ids in input order.
+///
+/// Authorization, the id counter and the ledger timestamp are each handled once for the whole
+/// batch. If any entry fails validation the call returns an error and the host rolls back every
+/// write made so far, so either all prescriptions are prepared or none are.
+///
+/// # Complexity
+/// O(n) time and O(n) space for the returned ids, where n is the batch size.
+///
+/// # Errors
+/// Returns `NotInitialized`, `Unauthorized`, or `InvalidInput` (also for an empty batch or one
+/// larger than `MAX_PRESCRIPTION_BATCH`).
+pub fn prepare_add_prescriptions(
+    env: &Env,
+    caller: Address,
+    prescriptions: Vec<BatchPrescriptionInput>,
+) -> Result<Vec<u64>, ContractError> {
+    require_write_access(env, &caller)?;
+    require_batch_size(prescriptions.len())?;
+
+    let now = env.ledger().timestamp();
+    let mut rx_id = get_prescription_count(env);
+    let mut rx_ids = Vec::new(env);
+    for input in prescriptions.iter() {
+        validate_prescription_data(&input.prescription_data)?;
+        rx_id = rx_id.saturating_add(1);
+        store_pending(
+            env,
+            rx_id,
+            input.patient,
+            input.provider,
+            input.prescription_data,
+            now,
+        );
+        rx_ids.push_back(rx_id);
+    }
+    env.storage().instance().set(&RX_COUNTER, &rx_id);
+    Ok(rx_ids)
 }
 
 /// Moves a pending prescription into persistent storage.
@@ -81,42 +124,35 @@ pub fn commit_add_prescription(
     caller: Address,
     rx_id: u64,
 ) -> Result<(), ContractError> {
-    require_initialized(env)?;
+    require_write_access(env, &caller)?;
+    let pending = load_pending(env, rx_id)?;
+    commit_pending(env, &caller, rx_id, pending);
+    Ok(())
+}
 
-    if get_access_control_contract(env).is_some() {
-        if !check_permission(env, &caller, Permission::WriteRecord)? {
-            return Err(ContractError::Unauthorized);
-        }
-    } else {
-        require_authorized_vision_records(env, &caller)?;
+/// Commits every pending prescription in `rx_ids`.
+///
+/// Fails, and the host rolls back the whole batch, if any id is not pending. A repeated id
+/// fails the same way, because its first occurrence already consumed the pending entry.
+///
+/// # Complexity
+/// O(n) time and O(1) extra space, where n is the batch size.
+///
+/// # Errors
+/// Returns `NotInitialized`, `Unauthorized`, `InvalidInput` for an empty or oversized batch, or
+/// `InvalidPhase` if an id has no pending prescription.
+pub fn commit_add_prescriptions(
+    env: &Env,
+    caller: Address,
+    rx_ids: Vec<u64>,
+) -> Result<(), ContractError> {
+    require_write_access(env, &caller)?;
+    require_batch_size(rx_ids.len())?;
+
+    for rx_id in rx_ids.iter() {
+        let pending = load_pending(env, rx_id)?;
+        commit_pending(env, &caller, rx_id, pending);
     }
-
-    let prep_key = (symbol_short!("P_ADD_RX"), rx_id);
-    let prepared: (Address, Address, PrescriptionData, u64) = env
-        .storage()
-        .temporary()
-        .get(&prep_key)
-        .ok_or(ContractError::InvalidPhase)?;
-
-    let prescription = Prescription {
-        id: rx_id,
-        patient: prepared.0,
-        provider: prepared.1,
-        lens_type: LensType::Glasses,
-        left_eye: prepared.2.clone(),
-        right_eye: prepared.2,
-        contact_data: OptionalContactLensData::None,
-        issued_at: prepared.3,
-        expires_at: prepared.3.saturating_add(31_536_000),
-        verified: false,
-        metadata_hash: String::from_str(env, ""),
-    };
-
-    env.storage()
-        .persistent()
-        .set(&(PRESCRIPTION_KEY, rx_id), &prescription);
-    env.storage().temporary().remove(&prep_key);
-    crate::events::publish_prescription_committed(env, rx_id, caller);
     Ok(())
 }
 
@@ -129,18 +165,37 @@ pub fn rollback_add_prescription(
     caller: Address,
     rx_id: u64,
 ) -> Result<(), ContractError> {
-    require_initialized(env)?;
+    require_write_access(env, &caller)?;
+    discard_pending(env, &caller, rx_id);
+    Ok(())
+}
 
-    if get_access_control_contract(env).is_some() {
-        if !check_permission(env, &caller, Permission::WriteRecord)? {
-            return Err(ContractError::Unauthorized);
+/// Discards every pending prescription in `rx_ids`.
+///
+/// Unlike the single rollback, every id must still be pending, so a batch never reports success
+/// for prescriptions it did not discard. Fails, and the host rolls back the whole batch, on the
+/// first id that is not pending (including a repeated id).
+///
+/// # Complexity
+/// O(n) time and O(1) extra space, where n is the batch size.
+///
+/// # Errors
+/// Returns `NotInitialized`, `Unauthorized`, `InvalidInput` for an empty or oversized batch, or
+/// `InvalidPhase` if an id has no pending prescription.
+pub fn rollback_add_prescriptions(
+    env: &Env,
+    caller: Address,
+    rx_ids: Vec<u64>,
+) -> Result<(), ContractError> {
+    require_write_access(env, &caller)?;
+    require_batch_size(rx_ids.len())?;
+
+    for rx_id in rx_ids.iter() {
+        if !env.storage().temporary().has(&(PENDING_RX_KEY, rx_id)) {
+            return Err(ContractError::InvalidPhase);
         }
-    } else {
-        require_authorized_vision_records(env, &caller)?;
+        discard_pending(env, &caller, rx_id);
     }
-
-    env.storage().temporary().remove(&(symbol_short!("P_ADD_RX"), rx_id));
-    crate::events::publish_prescription_rolled_back(env, rx_id, caller);
     Ok(())
 }
 
@@ -153,7 +208,11 @@ pub fn get_prescription_count(env: &Env) -> u64 {
 ///
 /// # Errors
 /// Returns `NotInitialized`, `Unauthorized`, or `RecordNotFound`.
-pub fn get_prescription(env: &Env, caller: Address, id: u64) -> Result<Prescription, ContractError> {
+pub fn get_prescription(
+    env: &Env,
+    caller: Address,
+    id: u64,
+) -> Result<Prescription, ContractError> {
     require_initialized(env)?;
 
     if get_access_control_contract(env).is_some() {
@@ -177,4 +236,81 @@ pub fn get_prescription(env: &Env, caller: Address, id: u64) -> Result<Prescript
             .get(&(PRESCRIPTION_KEY, id))
             .ok_or(ContractError::RecordNotFound)
     }
+}
+
+/// Write authorization shared by every prescription mutation: `WriteRecord` through
+/// `access_control` when it is configured, otherwise the `vision_records` contract.
+fn require_write_access(env: &Env, caller: &Address) -> Result<(), ContractError> {
+    require_initialized(env)?;
+
+    if get_access_control_contract(env).is_some() {
+        if !check_permission(env, caller, Permission::WriteRecord)? {
+            return Err(ContractError::Unauthorized);
+        }
+    } else {
+        require_authorized_vision_records(env, caller)?;
+    }
+    Ok(())
+}
+
+fn require_batch_size(len: u32) -> Result<(), ContractError> {
+    if len == 0 || len > MAX_PRESCRIPTION_BATCH {
+        return Err(ContractError::InvalidInput);
+    }
+    Ok(())
+}
+
+fn store_pending(
+    env: &Env,
+    rx_id: u64,
+    patient: Address,
+    provider: Address,
+    prescription_data: PrescriptionData,
+    prepared_at: u64,
+) {
+    let pending: PendingPrescription = (
+        patient.clone(),
+        provider.clone(),
+        prescription_data,
+        prepared_at,
+    );
+    env.storage()
+        .temporary()
+        .set(&(PENDING_RX_KEY, rx_id), &pending);
+    crate::events::publish_prescription_prepared(env, rx_id, patient, provider);
+}
+
+fn load_pending(env: &Env, rx_id: u64) -> Result<PendingPrescription, ContractError> {
+    env.storage()
+        .temporary()
+        .get(&(PENDING_RX_KEY, rx_id))
+        .ok_or(ContractError::InvalidPhase)
+}
+
+fn commit_pending(env: &Env, caller: &Address, rx_id: u64, pending: PendingPrescription) {
+    let (patient, provider, prescription_data, prepared_at) = pending;
+    let prescription = Prescription {
+        id: rx_id,
+        patient,
+        provider,
+        lens_type: LensType::Glasses,
+        left_eye: prescription_data.clone(),
+        right_eye: prescription_data,
+        contact_data: OptionalContactLensData::None,
+        issued_at: prepared_at,
+        expires_at: prepared_at.saturating_add(PRESCRIPTION_VALIDITY_SECS),
+        verified: false,
+        metadata_hash: String::from_str(env, ""),
+    };
+
+    env.storage()
+        .persistent()
+        .set(&(PRESCRIPTION_KEY, rx_id), &prescription);
+    env.storage().temporary().remove(&(PENDING_RX_KEY, rx_id));
+    crate::events::publish_prescription_committed(env, rx_id, caller.clone());
+}
+
+fn discard_pending(env: &Env, caller: &Address, rx_id: u64) {
+    env.storage().temporary().remove(&(PENDING_RX_KEY, rx_id));
+    crate::events::publish_prescription_rolled_back(env, rx_id, caller.clone());
 }

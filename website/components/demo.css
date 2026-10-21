@@ -97,6 +97,10 @@
   gap: 0.4rem;
 }
 
+.form-group[hidden] {
+  display: none;
+}
+
 .form-label {
   font-size: 0.85rem;
   font-weight: 700;

@@ -605,6 +605,7 @@ name = "clinical_records"
 version = "1.2.2"
 dependencies = [
  "access_control",
+ "serde_json",
  "soroban-sdk",
 ]
 
