@@ -17,6 +17,7 @@ pub mod events;
 pub mod examination;
 pub mod insurance;
 pub mod patient_profile;
+pub mod portability;
 pub mod prescription;
 pub mod provider;
 pub mod rate_limit;
@@ -2824,6 +2825,102 @@ impl VisionRecordsContract {
         env.storage().instance().get(&counter_key).unwrap_or(0)
     }
 
+    /// Export a patient's clinical data as FHIR R4 JSON or CSV (issue #321).
+    ///
+    /// The caller must be the patient, hold an active grant from the patient,
+    /// or be a system admin.
+    ///
+    /// Records are paged: `offset` and `limit` select a window of the
+    /// patient's record list, with `limit` capped at
+    /// [`portability::MAX_EXPORT_PAGE_SIZE`]. Prescriptions and access grants
+    /// are included only on the first page (`offset == 0`). Prescriptions and
+    /// grants are not paged yet: if the patient has more than one page of
+    /// either, the call fails with `InvalidInput`. Internal IDs are never
+    /// exported; see [`portability`] for the full scope.
+    pub fn export_patient_data(
+        env: Env,
+        caller: Address,
+        patient: Address,
+        format: portability::PortabilityFormat,
+        offset: u32,
+        limit: u32,
+    ) -> Result<Bytes, ContractError> {
+        caller.require_auth();
+        Self::enforce_rate_limit(&env, &caller)?;
+
+        let allowed = caller == patient
+            || Self::check_access(env.clone(), patient.clone(), caller.clone())
+                != AccessLevel::None
+            || Self::has_permission_unified(&env, &caller, &Permission::SystemAdmin);
+        if !allowed {
+            return Self::access_denied(&env, &caller, "export_patient_data", "ActiveGrant");
+        }
+
+        let page_size = limit.min(portability::MAX_EXPORT_PAGE_SIZE);
+        if page_size == 0 {
+            return Err(ContractError::InvalidInput);
+        }
+
+        let record_ids = Self::get_patient_records(env.clone(), patient.clone());
+        let page_end = offset.saturating_add(page_size).min(record_ids.len());
+
+        let mut entries = alloc::vec::Vec::new();
+        for index in offset..page_end {
+            let Some(record_id) = record_ids.get(index) else {
+                continue;
+            };
+            let record = Self::get_record_raw(&env, record_id)?;
+            let exam = if matches!(record.record_type, RecordType::Examination) {
+                examination::get_examination(&env, record_id)
+            } else {
+                None
+            };
+            entries.push(portability::ExportEntry { record, exam });
+        }
+
+        let mut prescriptions = alloc::vec::Vec::new();
+        let mut grants = alloc::vec::Vec::new();
+        if offset == 0 {
+            let history = prescription::get_patient_history(&env, patient.clone());
+            if history.len() > portability::MAX_EXPORT_PAGE_SIZE {
+                return Err(ContractError::InvalidInput);
+            }
+            for rx_id in history.iter() {
+                if let Some(rx) = prescription::get_prescription(&env, rx_id) {
+                    prescriptions.push(rx);
+                }
+            }
+
+            let list_key = (symbol_short!("ACC_LST"), patient.clone());
+            let grantees: Vec<Address> = env
+                .storage()
+                .persistent()
+                .get(&list_key)
+                .unwrap_or(Vec::new(&env));
+            if grantees.len() > portability::MAX_EXPORT_PAGE_SIZE {
+                return Err(ContractError::InvalidInput);
+            }
+            for grantee in grantees.iter() {
+                let key = (symbol_short!("ACCESS"), patient.clone(), grantee);
+                if let Some(grant) = env.storage().persistent().get::<_, AccessGrant>(&key) {
+                    grants.push(grant);
+                }
+            }
+        }
+
+        let export = portability::PatientExport {
+            now: env.ledger().timestamp(),
+            entries,
+            prescriptions,
+            grants,
+        };
+        let rendered = match format {
+            portability::PortabilityFormat::FhirJson => portability::render_fhir_bundle(&export),
+            portability::PortabilityFormat::Csv => portability::render_csv(&export),
+        };
+        Ok(Bytes::from_slice(&env, rendered.as_bytes()))
+    }
+
     /// Get multiple records by their IDs (unpaginated).
     pub fn get_records_by_ids(env: Env, ids: Vec<u64>) -> Result<Vec<VisionRecord>, ContractError> {
         let mut records: Vec<VisionRecord> = Vec::new(&env);
@@ -2943,6 +3040,9 @@ mod test_empty_record;
 
 #[cfg(test)]
 mod test_examination_endpoints;
+
+#[cfg(test)]
+mod test_portability;
 
 #[cfg(test)]
 mod test_profile;

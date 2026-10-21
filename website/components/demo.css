@@ -246,6 +246,29 @@
   justify-content: center;
 }
 
+/* Success checkmark is drawn stroke by stroke when the toast appears. */
+.toast-checkmark-circle,
+.toast-checkmark-tick {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .toast-checkmark-circle,
+  .toast-checkmark-tick {
+    stroke-dashoffset: 1;
+    animation: toast-checkmark-draw 0.4s ease-out forwards;
+  }
+
+  .toast-checkmark-tick {
+    animation-delay: 0.35s;
+  }
+}
+
+@keyframes toast-checkmark-draw {
+  to { stroke-dashoffset: 0; }
+}
+
 .toast-message {
   flex: 1;
   line-height: 1.4;

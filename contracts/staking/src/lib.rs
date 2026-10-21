@@ -9,6 +9,9 @@ pub mod timelock;
 #[cfg(test)]
 mod test_slash;
 
+#[cfg(test)]
+mod test_appeal;
+
 extern crate alloc;
 use alloc::string::ToString;
 
@@ -60,6 +63,12 @@ const USER_EARNED: Symbol = symbol_short!("ERND");
 // Used by the Governor DAO to compute the time-weighted loyalty multiplier.
 const USER_SINCE: Symbol = symbol_short!("SINCE");
 
+// Slash recovery / appeals
+const SLASH_CTR: Symbol = symbol_short!("SLSH_CTR");
+const SLASH_REC: Symbol = symbol_short!("SLSH_REC");
+const APPEAL_CTR: Symbol = symbol_short!("APL_CTR");
+const APPEAL: Symbol = symbol_short!("APPEAL");
+
 // ── Contract errors ──────────────────────────────────────────────────────────
 
 #[soroban_sdk::contracterror]
@@ -82,6 +91,12 @@ pub enum ContractError {
     MultisigError = 14,
     Paused = 15,
     SlippageExceeded = 16,
+    AppealNotFound = 17,
+    AppealAlreadyExists = 18,
+    AppealNotPending = 19,
+    SlashRecordNotFound = 20,
+    RecoveryExceedsSlash = 21,
+    AppealAmountInvalid = 22,
 }
 
 // ── Public-facing types (re-exported for test consumers) ─────────────────────
@@ -92,6 +107,45 @@ pub enum ContractError {
 pub struct StakerInfo {
     pub staked: i128,
     pub pending_rewards: i128,
+}
+
+/// Immutable record of a slash event, created every time `slash` succeeds.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct SlashRecord {
+    pub id: u64,
+    pub validator: Address,
+    pub slashed_by: Address,
+    pub amount: i128,
+    pub timestamp: u64,
+}
+
+/// Lifecycle status of a slash-recovery appeal.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AppealStatus {
+    /// Filed, awaiting governance resolution.
+    Pending,
+    /// Governance approved recovery of `approved_amount`.
+    Approved,
+    /// Governance rejected the appeal; no recovery.
+    Rejected,
+}
+
+/// A slashed validator's appeal for partial or full recovery.
+#[contracttype]
+#[derive(Clone, Debug)]
+pub struct SlashAppeal {
+    pub id: u64,
+    pub validator: Address,
+    pub slash_id: u64,
+    /// Amount the validator asks to recover (≤ original slash amount).
+    pub requested_amount: i128,
+    /// Amount governance actually approved (0 if rejected).
+    pub approved_amount: i128,
+    pub status: AppealStatus,
+    pub filed_at: u64,
+    pub resolved_at: u64,
 }
 
 // ── Contract ─────────────────────────────────────────────────────────────────
@@ -377,6 +431,14 @@ impl StakingContract {
         // 3. Reduce staked balance and global total.
         let new_stake = prev_stake.saturating_sub(amount);
         env.storage().persistent().set(&user_stake_key, &new_stake);
+
+        // Fully exiting ends continuous staking, so the loyalty clock resets.
+        // Partial unstakes keep the original first-stake timestamp.
+        if new_stake == 0 {
+            env.storage()
+                .persistent()
+                .remove(&(USER_SINCE, staker.clone()));
+        }
 
         let prev_total: i128 = env.storage().instance().get(&TOTAL_STAKED).unwrap_or(0);
         let new_total = prev_total.saturating_sub(amount);
@@ -1058,6 +1120,26 @@ impl StakingContract {
         let new_total = prev_total.saturating_sub(slash_amount);
         env.storage().instance().set(&TOTAL_STAKED, &new_total);
 
+        // Record an immutable slash history entry so the validator can appeal
+        // against a specific slash event.
+        let slash_id: u64 = env
+            .storage()
+            .instance()
+            .get(&SLASH_CTR)
+            .unwrap_or(0u64)
+            .saturating_add(1);
+        env.storage().instance().set(&SLASH_CTR, &slash_id);
+        let slash_record = SlashRecord {
+            id: slash_id,
+            validator: validator.clone(),
+            slashed_by: caller.clone(),
+            amount: slash_amount,
+            timestamp: env.ledger().timestamp(),
+        };
+        env.storage()
+            .persistent()
+            .set(&(SLASH_REC, slash_id), &slash_record);
+
         events::publish_slashed(
             &env,
             caller.clone(),
@@ -1076,6 +1158,196 @@ impl StakingContract {
         );
 
         Ok(slash_amount)
+    }
+
+    // ── Slash recovery / appeals ────────────────────────────────────────────
+
+    /// File an appeal against a prior slash.
+    ///
+    /// Only the slashed validator may appeal, and only once per slash.
+    /// The appeal enters [`AppealStatus::Pending`] until governance resolves
+    /// it via [`resolve_appeal`].  `requested_amount` must be positive and
+    /// must not exceed the original slash amount.
+    pub fn file_appeal(
+        env: Env,
+        validator: Address,
+        slash_id: u64,
+        requested_amount: i128,
+    ) -> Result<u64, ContractError> {
+        Self::require_not_paused(&env)?;
+        Self::require_initialized(&env)?;
+        validator.require_auth();
+
+        if requested_amount <= 0 {
+            return Err(ContractError::AppealAmountInvalid);
+        }
+
+        let slash_record: SlashRecord = env
+            .storage()
+            .persistent()
+            .get(&(SLASH_REC, slash_id))
+            .ok_or(ContractError::SlashRecordNotFound)?;
+
+        if slash_record.validator != validator {
+            return Err(ContractError::Unauthorized);
+        }
+        if requested_amount > slash_record.amount {
+            return Err(ContractError::RecoveryExceedsSlash);
+        }
+
+        // One pending appeal per slash at a time.
+        let pending_key = (symbol_short!("APL_SL"), slash_id);
+        if env.storage().persistent().has(&pending_key) {
+            return Err(ContractError::AppealAlreadyExists);
+        }
+
+        let appeal_id: u64 = env
+            .storage()
+            .instance()
+            .get(&APPEAL_CTR)
+            .unwrap_or(0u64)
+            .saturating_add(1);
+        env.storage().instance().set(&APPEAL_CTR, &appeal_id);
+
+        let appeal = SlashAppeal {
+            id: appeal_id,
+            validator: validator.clone(),
+            slash_id,
+            requested_amount,
+            approved_amount: 0,
+            status: AppealStatus::Pending,
+            filed_at: env.ledger().timestamp(),
+            resolved_at: 0,
+        };
+        env.storage()
+            .persistent()
+            .set(&(APPEAL, appeal_id), &appeal);
+        env.storage().persistent().set(&pending_key, &true);
+
+        events::publish_appeal_filed(
+            &env,
+            appeal_id,
+            validator.clone(),
+            slash_id,
+            requested_amount,
+        );
+
+        audit::AuditManager::log_event(
+            &env,
+            validator,
+            "staking.appeal_filed",
+            soroban_sdk::String::from_str(&env, &appeal_id.to_string()),
+            "ok",
+        );
+
+        Ok(appeal_id)
+    }
+
+    /// Resolve a pending appeal as governance.
+    ///
+    /// `approved_amount == 0` rejects the appeal.  A positive value restores
+    /// that much stake to the validator (partial or full recovery, capped at
+    /// the originally slashed amount).  Only admin-tier callers (the Governor
+    /// DAO executes approved proposals through an admin/proposer address) may
+    /// resolve.
+    pub fn resolve_appeal(
+        env: Env,
+        caller: Address,
+        appeal_id: u64,
+        approved_amount: i128,
+    ) -> Result<(), ContractError> {
+        Self::require_not_paused(&env)?;
+        Self::require_initialized(&env)?;
+        caller.require_auth();
+        Self::require_admin_tier(&env, &caller, &AdminTier::ContractAdmin, "resolve_appeal")?;
+
+        if approved_amount < 0 {
+            return Err(ContractError::AppealAmountInvalid);
+        }
+
+        let mut appeal: SlashAppeal = env
+            .storage()
+            .persistent()
+            .get(&(APPEAL, appeal_id))
+            .ok_or(ContractError::AppealNotFound)?;
+
+        if appeal.status != AppealStatus::Pending {
+            return Err(ContractError::AppealNotPending);
+        }
+
+        let slash_record: SlashRecord = env
+            .storage()
+            .persistent()
+            .get(&(SLASH_REC, appeal.slash_id))
+            .ok_or(ContractError::SlashRecordNotFound)?;
+
+        if approved_amount > slash_record.amount {
+            return Err(ContractError::RecoveryExceedsSlash);
+        }
+
+        if approved_amount == 0 {
+            appeal.status = AppealStatus::Rejected;
+            appeal.approved_amount = 0;
+        } else {
+            // Restore stake: credit the validator and bump the global total.
+            let user_stake_key = (USER_STAKE, appeal.validator.clone());
+            let current: i128 = env.storage().persistent().get(&user_stake_key).unwrap_or(0);
+            env.storage()
+                .persistent()
+                .set(&user_stake_key, &current.saturating_add(approved_amount));
+
+            let prev_total: i128 = env.storage().instance().get(&TOTAL_STAKED).unwrap_or(0);
+            env.storage()
+                .instance()
+                .set(&TOTAL_STAKED, &prev_total.saturating_add(approved_amount));
+
+            appeal.status = AppealStatus::Approved;
+            appeal.approved_amount = approved_amount;
+        }
+        appeal.resolved_at = env.ledger().timestamp();
+
+        env.storage()
+            .persistent()
+            .set(&(APPEAL, appeal_id), &appeal);
+        // Clear the one-pending-appeal lock so future slashes can be appealed.
+        env.storage()
+            .persistent()
+            .remove(&(symbol_short!("APL_SL"), appeal.slash_id));
+
+        events::publish_appeal_resolved(
+            &env,
+            appeal_id,
+            appeal.validator.clone(),
+            appeal.slash_id,
+            approved_amount,
+            appeal.status.clone(),
+        );
+
+        audit::AuditManager::log_event(
+            &env,
+            caller,
+            "staking.appeal_resolved",
+            soroban_sdk::String::from_str(&env, &appeal_id.to_string()),
+            "ok",
+        );
+
+        Ok(())
+    }
+
+    /// Return a slash record by id.
+    pub fn get_slash_record(env: Env, slash_id: u64) -> Result<SlashRecord, ContractError> {
+        env.storage()
+            .persistent()
+            .get(&(SLASH_REC, slash_id))
+            .ok_or(ContractError::SlashRecordNotFound)
+    }
+
+    /// Return an appeal by id.
+    pub fn get_appeal(env: Env, appeal_id: u64) -> Result<SlashAppeal, ContractError> {
+        env.storage()
+            .persistent()
+            .get(&(APPEAL, appeal_id))
+            .ok_or(ContractError::AppealNotFound)
     }
 
     // ── Internal helpers ─────────────────────────────────────────────────────
@@ -1439,3 +1711,6 @@ mod test_reward_multiplier;
 
 #[cfg(test)]
 mod test_slippage;
+
+#[cfg(test)]
+mod test_loyalty_age;

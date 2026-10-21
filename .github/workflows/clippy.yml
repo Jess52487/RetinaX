@@ -1,0 +1,52 @@
+name: Clippy Lint
+
+on:
+  push:
+    paths:
+      - 'contracts/**'
+      - 'sdk/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/clippy.yml'
+  pull_request:
+    paths:
+      - 'contracts/**'
+      - 'sdk/**'
+      - 'Cargo.toml'
+      - 'Cargo.lock'
+      - '.github/workflows/clippy.yml'
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  clippy:
+    name: cargo clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          target: wasm32-unknown-unknown
+
+      - name: Cache Cargo registry
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-clippy-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-clippy-
+
+      - name: Run clippy on workspace
+        run: cargo clippy --workspace --all-targets -- -D warnings

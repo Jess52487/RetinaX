@@ -1,24 +1,80 @@
 /* ==========================================================================
-   RetinaX — Skeleton Loading Animation
-   Design System: RetinaX Clinical (Serene Clinical White, Slate Navy, Medical Teal)
-   Source: split from website/styles.css — see website/styles.css aggregator
+   RetinaX — Comprehensive Skeleton Loading States & Transitions (Issue #292)
+   Design System: RetinaX Clinical (Clinical White, Slate Navy, Medical Teal)
    ========================================================================== */
 
+:root {
+  --skeleton-base: #1e293b;
+  --skeleton-highlight: #334155;
+  --skeleton-animation-duration: 1.5s;
+}
+
+[data-theme="light"] {
+  --skeleton-base: #e2e8f0;
+  --skeleton-highlight: #cbd5e1;
+}
+
 /* ==========================================================================
-   Skeleton Loading Animation for Clinical Data Fetch
+   Base Skeleton Shimmer Animation
+   ========================================================================== */
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes skeleton-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.skeleton-fade-in {
+  animation: skeleton-fade-in 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Base shimmer utility applied to all skeleton elements */
+.skeleton-line,
+.skeleton-box,
+.skeleton-circle,
+.skeleton-pill,
+.skeleton-badge,
+.pc-skel,
+.pc-skel-circle,
+.ra-skel {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 25%,
+    var(--skeleton-highlight) 50%,
+    var(--skeleton-base) 75%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading var(--skeleton-animation-duration) ease-in-out infinite;
+  display: block;
+}
+
+/* ==========================================================================
+   Standard Skeleton Geometric Primitives
    ========================================================================== */
 .skeleton-wrapper {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  width: 100%;
 }
 
 .skeleton-line {
   height: 16px;
-  background: linear-gradient(90deg, #1e293b 25%, #334155 50%, #1e293b 75%);
-  background-size: 200% 100%;
   border-radius: 4px;
-  animation: skeleton-loading 1.5s infinite;
+  width: 100%;
 }
 
 .skeleton-line.skeleton-title {
@@ -31,11 +87,124 @@
   width: 60%;
 }
 
-@keyframes skeleton-loading {
-  0% {
-    background-position: 200% 0;
+.skeleton-circle {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.skeleton-pill,
+.skeleton-badge {
+  border-radius: 9999px;
+  height: 22px;
+  width: 80px;
+}
+
+.skeleton-box {
+  border-radius: 8px;
+}
+
+/* ==========================================================================
+   Patient Card Component Skeleton Shapes
+   ========================================================================== */
+.patient-card__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 16px 0;
+}
+
+.pc-skel {
+  border-radius: 4px;
+}
+
+.pc-skel-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+}
+
+.pc-skel-title {
+  height: 20px;
+  width: 140px;
+  margin-bottom: 6px;
+}
+
+.pc-skel-line {
+  height: 14px;
+  width: 100%;
+}
+
+.pc-skel-badge {
+  height: 22px;
+  width: 70px;
+  border-radius: 9999px;
+}
+
+/* ==========================================================================
+   Repo Avatar Component Skeleton Shapes
+   ========================================================================== */
+.repo-avatar__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+}
+
+.ra-skel {
+  border-radius: 4px;
+}
+
+.ra-skel--title {
+  height: 20px;
+  width: 160px;
+}
+
+.ra-skel--avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+}
+
+.ra-skel--line {
+  height: 14px;
+  width: 100%;
+}
+
+.ra-skel--short {
+  height: 14px;
+  width: 60%;
+}
+
+/* ==========================================================================
+   Smooth Content Transition & State Wrappers
+   ========================================================================== */
+.is-loading {
+  position: relative;
+  pointer-events: none;
+  user-select: none;
+  transition: opacity 0.3s ease, filter 0.3s ease;
+}
+
+/* ==========================================================================
+   Reduced Motion Accessibility Preference
+   ========================================================================== */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line,
+  .skeleton-box,
+  .skeleton-circle,
+  .skeleton-pill,
+  .skeleton-badge,
+  .pc-skel,
+  .pc-skel-circle,
+  .ra-skel {
+    animation: none;
+    background: var(--skeleton-base);
+    opacity: 0.8;
   }
-  100% {
-    background-position: -200% 0;
+
+  .skeleton-fade-in {
+    animation: none;
+    opacity: 1;
+    transform: none;
   }
 }

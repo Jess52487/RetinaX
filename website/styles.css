@@ -22,7 +22,9 @@
 @import url('./components/connect-wallet.css');
 @import url('./components/global-spinner.css');
 @import url('./components/error-feedback.css');
+@import url('./components/accordion.css');
 @import url('./components/responsive.css');
+@import url('./components/i18n.css');
    RetinaX — Clinical Medical Design System (HERO BACKGROUND WITH DARK OVERLAY)
    Theme: Serene Clinical White, Slate Navy & Medical Teal
    Typography: Fraunces Editorial Serif + Plus Jakarta Sans UI
@@ -1340,3 +1342,51 @@ modal-dialog {
   .contract-grid { grid-template-columns: 1fr; }
   .footer-grid { grid-template-columns: 1fr; }
 }
+
+/* ==========================================================================
+   WCAG 2.1 AA Accessibility Compliant Styles
+   ========================================================================== */
+:focus-visible {
+  outline: 2px solid var(--accent, #0d9488);
+  outline-offset: 3px;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.25);
+}
+
+.btn:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.demo-tab-btn:focus-visible,
+.theme-toggle:focus-visible,
+.nav-link:focus-visible,
+.form-input:focus-visible,
+.form-select:focus-visible,
+.slider-input:focus-visible {
+  outline: 2px solid #0d9488 !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(13, 148, 136, 0.3) !important;
+}
+
+[data-theme="dark"] :focus-visible,
+[data-theme="dark"] .btn:focus-visible,
+[data-theme="dark"] .demo-tab-btn:focus-visible,
+[data-theme="dark"] .theme-toggle:focus-visible,
+[data-theme="dark"] .nav-link:focus-visible,
+[data-theme="dark"] .form-input:focus-visible,
+[data-theme="dark"] .form-select:focus-visible,
+[data-theme="dark"] .slider-input:focus-visible {
+  outline: 2px solid #2dd4bf !important;
+  outline-offset: 2px !important;
+  box-shadow: 0 0 0 4px rgba(45, 212, 191, 0.35) !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
