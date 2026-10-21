@@ -9,10 +9,13 @@
 #![no_std]
 #![allow(clippy::too_many_arguments, clippy::large_enum_variant)]
 
+extern crate alloc;
+
 pub mod admin;
 pub mod errors;
 pub mod events;
 pub mod examination;
+pub mod fhir;
 pub mod prescription;
 pub mod types;
 
@@ -22,7 +25,9 @@ mod test;
 pub use errors::ContractError;
 pub use types::*;
 
-use soroban_sdk::{contract, contractimpl, Address, Env, String};
+use soroban_sdk::{contract, contractimpl, Address, Env, String, Vec};
+
+use fhir::types::{MedicationRequest, Observation};
 
 /// Soroban contract that stores eye examinations and prescriptions.
 #[contract]
@@ -161,6 +166,51 @@ impl ClinicalRecordsContract {
         examination::get_eye_examination(&env, caller, record_id)
     }
 
+    /// Map a stored [`EyeExamination`] to a list of FHIR R4 [`Observation`]
+    /// resources (visual acuity, IOP, eye-exam narrative).
+    ///
+    /// Each observation carries a canonical LOINC system URI, `status`,
+    /// `subject`, and `effective[x]` so it passes
+    /// [`FhirContract::validate_eye_exam_observation`].
+    ///
+    /// # Errors
+    /// * `Unauthorized`  – caller is not the configured vision-records contract.
+    /// * `RecordNotFound`– no examination exists for `record_id`.
+    pub fn get_eye_examination_fhir(
+        env: Env,
+        caller: Address,
+        record_id: u64,
+        subject_id: String,
+    ) -> Result<Vec<Observation>, ContractError> {
+        let exam = examination::get_eye_examination(&env, caller, record_id)?;
+        Ok(examination::eye_examination_to_fhir(
+            &env, &exam, subject_id,
+        ))
+    }
+
+    /// Map a stored [`Prescription`] to a FHIR R4 [`MedicationRequest`].
+    ///
+    /// `medication[x]` uses SNOMED CT Eye glasses (`50121007`) or Contact
+    /// lenses (`57368009`) coded per `lens_type`; per-eye lens parameters
+    /// (sphere / cylinder / axis / addition / PD) are carried in
+    /// `dosage_text` with the LOINC EYE.GLASSES prescription codes. The
+    /// result always satisfies the fhir contract's
+    /// `validate_medication_request` rules.
+    ///
+    /// # Errors
+    /// * `Unauthorized`  – caller is not the configured vision-records
+    ///   contract.
+    /// * `RecordNotFound`– no prescription exists for `id`.
+    pub fn get_prescription_fhir(
+        env: Env,
+        caller: Address,
+        id: u64,
+        subject_id: String,
+    ) -> Result<MedicationRequest, ContractError> {
+        let rx = prescription::get_prescription(&env, caller, id)?;
+        Ok(prescription::prescription_to_fhir(&env, &rx, subject_id))
+    }
+
     /// First step of the two-phase prescription flow. Stores the prescription as pending.
     ///
     /// Assigns the next prescription id, keeps the pending data in temporary storage,
@@ -211,6 +261,51 @@ impl ClinicalRecordsContract {
         prescription::rollback_add_prescription(&env, caller, rx_id)
     }
 
+    /// Batch form of `prepare_add_prescription` for the several prescriptions one examination
+    /// often produces. Returns the new ids in input order.
+    ///
+    /// Authorization is checked once for the whole batch. The batch is atomic: if any entry is
+    /// invalid, nothing is prepared and no id is consumed. At most `MAX_PRESCRIPTION_BATCH` (10)
+    /// entries are accepted.
+    ///
+    /// # Errors
+    /// Returns `Unauthorized` if the caller lacks write access, or `InvalidInput` if the batch is
+    /// empty, too large, or contains invalid prescription values.
+    pub fn prepare_add_prescriptions(
+        env: Env,
+        caller: Address,
+        prescriptions: Vec<BatchPrescriptionInput>,
+    ) -> Result<Vec<u64>, ContractError> {
+        prescription::prepare_add_prescriptions(&env, caller, prescriptions)
+    }
+
+    /// Batch form of `commit_add_prescription`. Atomic: either every id is committed or none is.
+    ///
+    /// # Errors
+    /// Returns `Unauthorized` if the caller lacks write access, `InvalidInput` if the batch is
+    /// empty or too large, or `InvalidPhase` if any id is not pending (including a repeated id).
+    pub fn commit_add_prescriptions(
+        env: Env,
+        caller: Address,
+        rx_ids: Vec<u64>,
+    ) -> Result<(), ContractError> {
+        prescription::commit_add_prescriptions(&env, caller, rx_ids)
+    }
+
+    /// Batch form of `rollback_add_prescription`. Atomic: either every id is discarded or none
+    /// is. Every id must still be pending.
+    ///
+    /// # Errors
+    /// Returns `Unauthorized` if the caller lacks write access, `InvalidInput` if the batch is
+    /// empty or too large, or `InvalidPhase` if any id is not pending (including a repeated id).
+    pub fn rollback_add_prescriptions(
+        env: Env,
+        caller: Address,
+        rx_ids: Vec<u64>,
+    ) -> Result<(), ContractError> {
+        prescription::rollback_add_prescriptions(&env, caller, rx_ids)
+    }
+
     /// Returns how many prescription ids have been issued by `prepare_add_prescription`.
     ///
     /// This counts prepared prescriptions, including ones later rolled back, not only
@@ -234,5 +329,38 @@ impl ClinicalRecordsContract {
         id: u64,
     ) -> Result<Prescription, ContractError> {
         prescription::get_prescription(&env, caller, id)
+    }
+
+    /// Exports the eye examination stored under `record_id` as a FHIR R4 `Observation`, encoded
+    /// as UTF-8 JSON.
+    ///
+    /// Uses the same read access rules as `get_eye_examination`. The linked patient, if any,
+    /// becomes the `subject`.
+    ///
+    /// # Errors
+    /// Returns `Unauthorized`, `RecordNotFound`, or `InvalidInput` if stored data cannot be
+    /// represented in FHIR (text that is not UTF-8, or a timestamp past the year 9999).
+    pub fn export_eye_examination_fhir(
+        env: Env,
+        caller: Address,
+        record_id: u64,
+    ) -> Result<Bytes, ContractError> {
+        fhir::export_eye_examination(&env, caller, record_id)
+    }
+
+    /// Exports the committed prescription `id` as a FHIR R4 `MedicationRequest`, encoded as
+    /// UTF-8 JSON.
+    ///
+    /// Uses the same read access rules as `get_prescription`.
+    ///
+    /// # Errors
+    /// Returns `Unauthorized`, `RecordNotFound`, or `InvalidInput` if stored data cannot be
+    /// represented in FHIR.
+    pub fn export_prescription_fhir(
+        env: Env,
+        caller: Address,
+        id: u64,
+    ) -> Result<Bytes, ContractError> {
+        fhir::export_prescription(&env, caller, id)
     }
 }

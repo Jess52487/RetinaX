@@ -188,6 +188,18 @@ pub struct PrescriptionData {
     pub pd: String,
 }
 
+/// One prescription in a `prepare_add_prescriptions` batch.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct BatchPrescriptionInput {
+    /// Patient the prescription is for.
+    pub patient: Address,
+    /// Provider who issued the prescription.
+    pub provider: Address,
+    /// Refraction values for the prescription.
+    pub prescription_data: PrescriptionData,
+}
+
 /// Contact lens fitting values.
 #[contracttype]
 #[derive(Clone, Debug, Eq, PartialEq)]

@@ -6,10 +6,11 @@ use soroban_sdk::{
 };
 
 pub mod types;
+pub mod validation;
 pub use types::FhirError;
-use types::{Gender, Observation, ObservationStatus, Patient};
+use types::{Gender, MedicationRequest, Observation, ObservationStatus, Patient};
 
-use common::migration::{self, FieldTransform, Migration, SchemaVersion, CURRENT_VERSION};
+use common::migration::{self, FieldTransform, Migration};
 
 // Storage keys
 const INITIALIZED: Symbol = symbol_short!("INIT");
@@ -210,6 +211,51 @@ impl FhirContract {
         !observation.id.is_empty()
             && !observation.code_system.is_empty()
             && !observation.subject_id.is_empty()
+    }
+
+    /// Validates an Observation against FHIR R4 required-field rules:
+    /// `status`, `code`, `subject`, and `effective[x]` must be present, and
+    /// the coding system must reference LOINC or SNOMED CT.
+    ///
+    /// # Errors
+    /// * `InvalidRecordData` – a required field (`code`, `subject`,
+    ///   `effective[x]`) is missing.
+    /// * `InvalidPayload`    – the coding system is not LOINC/SNOMED.
+    pub fn validate_observation_r4(_env: Env, observation: Observation) -> Result<(), FhirError> {
+        validation::validate_observation_r4(&observation)
+    }
+
+    /// Validates an eye-examination Observation: full R4 validation plus a
+    /// check that the coding references one of the optometry codes used to
+    /// represent `EyeExamination` data (LOINC eye/VA/IOP codes or SNOMED
+    /// visual-acuity codes).
+    ///
+    /// # Errors
+    /// * `InvalidRecordData` – a required R4 field is missing.
+    /// * `InvalidPayload`    – coding system or code value is not an
+    ///   eye-examination code.
+    pub fn validate_eye_exam_observation(
+        _env: Env,
+        observation: Observation,
+    ) -> Result<(), FhirError> {
+        validation::validate_eye_examination_observation(&observation)
+    }
+
+    /// Validates a [`MedicationRequest`] against the FHIR R4 required-field
+    /// rules and RetinaX lens-prescription terminology: `medication[x]` must
+    /// code a SNOMED CT lens device (Eye glasses `50121007` or Contact
+    /// lenses `57368009`), `subject` and `authoredOn` must be present, and
+    /// `dispenseRequest.validityPeriod` must be well-ordered.
+    ///
+    /// # Errors
+    /// * `InvalidRecordData` – a required R4 field is missing or invalid.
+    /// * `InvalidPayload`    – coding system, intent, or device code is not
+    ///   a RetinaX lens-prescription value.
+    pub fn validate_medication_request(
+        _env: Env,
+        request: MedicationRequest,
+    ) -> Result<(), FhirError> {
+        validation::validate_medication_request_r4(&request)
     }
 }
 

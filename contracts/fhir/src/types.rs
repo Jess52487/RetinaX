@@ -45,6 +45,52 @@ pub struct Observation {
     pub effective_datetime: u64,
 }
 
+/// FHIR R4 MedicationRequest.status.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum MedicationRequestStatus {
+    Active,
+    OnHold,
+    Completed,
+    Stopped,
+    Draft,
+    EnteredInError,
+}
+
+/// FHIR R4 MedicationRequest.intent.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum MedicationRequestIntent {
+    Order,
+    Plan,
+    Proposal,
+}
+
+/// FHIR R4 MedicationRequest (RetinaX lens-prescription subset).
+///
+/// The required R4 elements are always present: `status`, `intent`,
+/// `medication[x]` (as a `CodeableConcept` coding in
+/// `medication_system`/`medication_code`/`medication_display`),
+/// `subject`, and `authoredOn`. Per-eye lens parameters (sphere,
+/// cylinder, axis, addition, PD) are carried in `dosage_text` using the
+/// LOINC EYE.GLASSES prescription codes as labels.
+#[contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct MedicationRequest {
+    pub id: String,
+    pub status: MedicationRequestStatus,
+    pub intent: MedicationRequestIntent,
+    pub medication_system: String,  // medication[x].coding.system
+    pub medication_code: String,    // medication[x].coding.code
+    pub medication_display: String, // medication[x].coding.display
+    pub subject_id: String,         // Reference to Patient.id
+    pub requester_id: String,       // Reference to Practitioner
+    pub authored_on: u64,           // authoredOn (Unix timestamp)
+    pub validity_period_start: u64, // dispenseRequest.validityPeriod.start
+    pub validity_period_end: u64,   // dispenseRequest.validityPeriod.end
+    pub dosage_text: String,        // dosage[].text (lens parameters)
+}
+
 #[soroban_sdk::contracterror]
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 #[repr(u32)]

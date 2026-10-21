@@ -6,6 +6,7 @@ use soroban_sdk::{contracttype, symbol_short, Address, BytesN, Env, String, Symb
 
 pub(crate) const PROPOSAL_CTR: Symbol = symbol_short!("PROP_CTR");
 pub(crate) const PROPOSAL: Symbol = symbol_short!("PROP");
+pub(crate) const PROPOSAL_SUPPLY: Symbol = symbol_short!("PROP_SUP");
 
 // TTL: ~60 days at 5s/ledger
 const TTL_THRESHOLD: u32 = 1_036_800;
@@ -123,6 +124,19 @@ pub(crate) fn store(env: &Env, proposal: &Proposal) {
 
 pub(crate) fn load(env: &Env, id: u64) -> Option<Proposal> {
     env.storage().persistent().get(&proposal_key(id))
+}
+
+/// Record the total vote supply in effect when proposal `id` was created.
+pub(crate) fn store_supply_snapshot(env: &Env, id: u64, supply: i128) {
+    let key = (PROPOSAL_SUPPLY, id);
+    env.storage().persistent().set(&key, &supply);
+    env.storage()
+        .persistent()
+        .extend_ttl(&key, TTL_THRESHOLD, TTL_EXTEND_TO);
+}
+
+pub(crate) fn load_supply_snapshot(env: &Env, id: u64) -> Option<i128> {
+    env.storage().persistent().get(&(PROPOSAL_SUPPLY, id))
 }
 
 // ── Quorum constants by proposal type ────────────────────────────────────────

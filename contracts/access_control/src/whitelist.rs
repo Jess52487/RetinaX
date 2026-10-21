@@ -34,6 +34,14 @@ pub struct WhitelistRemovedEvent {
 }
 
 /// Sets whether whitelist enforcement is active.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address invoking the function; must be the active administrator.
+/// * `enabled` - `true` to enforce whitelist checks, `false` to permit all addresses.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` is not the active administrator.
 pub fn set_whitelist_enabled(
     env: &Env,
     caller: &Address,
@@ -53,11 +61,22 @@ pub fn set_whitelist_enabled(
 }
 
 /// Returns whether whitelist enforcement is currently enabled.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
 pub fn is_whitelist_enabled(env: &Env) -> bool {
     env.storage().instance().get(&WL_EN).unwrap_or(false)
 }
 
 /// Adds an address to the authorized whitelist.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address invoking the function; must be the active administrator.
+/// * `user` - The target address to whitelist.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` is not the active administrator.
 pub fn add_to_whitelist(
     env: &Env,
     caller: &Address,
@@ -87,6 +106,14 @@ pub fn add_to_whitelist(
 }
 
 /// Batch adds addresses to the authorized whitelist.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address invoking the function; must be the active administrator.
+/// * `users` - Vector of user addresses to add to the whitelist.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` is not the active administrator.
 pub fn batch_add_to_whitelist(
     env: &Env,
     caller: &Address,
@@ -121,6 +148,14 @@ pub fn batch_add_to_whitelist(
 }
 
 /// Removes an address from the authorized whitelist.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address invoking the function; must be the active administrator.
+/// * `user` - The target address to remove from the whitelist.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` is not the active administrator.
 pub fn remove_from_whitelist(
     env: &Env,
     caller: &Address,
@@ -153,6 +188,14 @@ pub fn remove_from_whitelist(
 }
 
 /// Batch removes addresses from the authorized whitelist.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address invoking the function; must be the active administrator.
+/// * `users` - Vector of user addresses to remove from the whitelist.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` is not the active administrator.
 pub fn batch_remove_from_whitelist(
     env: &Env,
     caller: &Address,
@@ -196,6 +239,18 @@ pub fn batch_remove_from_whitelist(
 /// Returns a paginated list of whitelisted addresses along with the total count.
 /// (paginated_addresses, total_count)
 pub fn get_whitelisted_addresses(env: &Env, offset: u32, limit: u32) -> (Vec<Address>, u32) {
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `offset` - The 0-based starting index.
+/// * `limit` - The maximum number of entries to return.
+///
+/// Returns a tuple `(Vec<Address>, u32)` containing the paginated slice and total count.
+pub fn get_whitelisted_addresses(
+    env: &Env,
+    offset: u32,
+    limit: u32,
+) -> (Vec<Address>, u32) {
     let list: Vec<Address> = env
         .storage()
         .persistent()
@@ -219,7 +274,12 @@ pub fn get_whitelisted_addresses(env: &Env, offset: u32, limit: u32) -> (Vec<Add
 }
 
 /// Checks whether `user` is on the whitelist.
-/// If whitelist is disabled, returns `true`.
+///
+/// Returns `true` if whitelist enforcement is disabled or if the user is explicitly whitelisted.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `user` - The address to check.
 pub fn check_whitelist(env: &Env, user: &Address) -> bool {
     if !is_whitelist_enabled(env) {
         return true;
@@ -231,6 +291,10 @@ pub fn check_whitelist(env: &Env, user: &Address) -> bool {
 }
 
 /// Returns raw status of user on whitelist without checking `is_whitelist_enabled`.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `user` - The address to query.
 pub fn is_whitelisted(env: &Env, user: &Address) -> bool {
     env.storage()
         .persistent()

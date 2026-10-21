@@ -3,7 +3,7 @@
 
   const WINDOW_MS = 60_000;
   const MAX_REQUESTS = 5;
-  const attempts = [];
+  const allowByKey = createKeyedRateLimiter();
 
   function createRateLimiter({
     maxRequests = MAX_REQUESTS,
@@ -20,12 +20,17 @@
     };
   }
 
+  function createKeyedRateLimiter(options = {}) {
+    const limiters = new Map();
+    return function allowKey(key = 'anonymous') {
+      if (!limiters.has(key)) limiters.set(key, createRateLimiter(options));
+      return limiters.get(key)();
+    };
+  }
+
   function allow() {
-    const now = Date.now();
-    while (attempts.length && now - attempts[0] >= WINDOW_MS) attempts.shift();
-    if (attempts.length >= MAX_REQUESTS) return false;
-    attempts.push(now);
-    return true;
+    const key = document.querySelector('[data-wallet-address]')?.dataset.walletAddress || 'anonymous';
+    return allowByKey(key);
   }
 
   if (typeof document !== 'undefined')
@@ -46,5 +51,5 @@
       true
     );
 
-  if (typeof module !== 'undefined') module.exports = { createRateLimiter };
+  if (typeof module !== 'undefined') module.exports = { createRateLimiter, createKeyedRateLimiter };
 })();

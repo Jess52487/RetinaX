@@ -572,7 +572,7 @@ fn test_execute_proposal_is_not_replayable() {
     let admin = Address::generate(&env);
     let staking = Address::generate(&env);
     let treasury = Address::generate(&env);
-    client.initialize(&admin, &staking, &treasury, &1_000i128);
+    client.initialize(&admin, &staking, &treasury, &500i128);
 
     let proposer = Address::generate(&env);
     let voter = Address::generate(&env);

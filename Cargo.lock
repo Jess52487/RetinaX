@@ -604,7 +604,9 @@ checksum = "1c133bc6a41be0d194c306b5506d15e6feeea7b1d6604bd3f8310dfb2ca96486"
 name = "clinical_records"
 version = "1.2.2"
 dependencies = [
+ "fhir",
  "access_control",
+ "serde_json",
  "soroban-sdk",
 ]
 
@@ -1203,7 +1205,9 @@ name = "governor"
 version = "1.2.2"
 dependencies = [
  "common",
+ "proptest",
  "soroban-sdk",
+ "timelock",
 ]
 
 [[package]]
@@ -2549,6 +2553,7 @@ dependencies = [
 name = "treasury"
 version = "1.2.2"
 dependencies = [
+ "governor",
  "soroban-sdk",
 ]
 

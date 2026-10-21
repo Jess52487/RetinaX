@@ -354,38 +354,60 @@ describe('Interactive Simulator Tab Switching & Keyboard Navigation (#295)', () 
   });
 });
 
-describe('RBAC Access Control Simulator Logic (#295)', () => {
+describe('RBAC Access Control Simulator Logic (#284)', () => {
+  const USER = 'GDZRQ4BDEZLU4S7PZ7M3B5YDJHKGKUI27QPBKNVD3MWXWGA3KU7E7RKO';
   let app;
-  let durSlider, durVal, docSelect, form, btn, preview;
+  let form, actionSelect, btn, preview;
+  let roleGroup, permissionGroup, durationGroup, durSlider, durVal;
 
   beforeEach(() => {
     const { getOrCreate } = setupMockDOM();
     form = getOrCreate('rbac-form', 'form');
+    actionSelect = getOrCreate('rbac-action', 'select');
+    actionSelect.value = 'get_role';
+    getOrCreate('input-patient-addr', 'input').value = USER;
+    getOrCreate('rbac-role', 'select').value = '3';
+    getOrCreate('rbac-permission', 'select').value = '2';
+    roleGroup = getOrCreate('rbac-role-group');
+    permissionGroup = getOrCreate('rbac-permission-group');
+    durationGroup = getOrCreate('rbac-duration-group');
     durSlider = getOrCreate('dur-slider', 'input');
     durSlider.value = '24';
     durVal = getOrCreate('dur-val', 'span');
-    docSelect = getOrCreate('select-doctor', 'select');
-    docSelect.value = 'GAB...DR_SMITH_OPTOMETRY';
-    const patientInput = getOrCreate('input-patient-addr', 'input');
-    patientInput.value = 'GDC...PATIENT_KEY_99X';
     btn = getOrCreate('btn-grant-access', 'button');
     form.appendChild(btn);
     preview = getOrCreate('preview-rbac-code', 'pre');
 
     delete require.cache[require.resolve('./app.js')];
     app = require('./app.js');
-    speedUpRPC(app);
     app.initRBACSimulator();
   });
 
-  test('slider input updates duration display text and ARIA attributes', async () => {
+  const submit = () => form.dispatchEvent({ type: 'submit', preventDefault: () => {} });
+
+  test('shows only the inputs the selected contract call needs', async () => {
+    assert.ok(roleGroup.hidden && permissionGroup.hidden && durationGroup.hidden);
+
+    actionSelect.value = 'has_permission';
+    await actionSelect.dispatchEvent({ type: 'change' });
+    assert.ok(!permissionGroup.hidden && roleGroup.hidden && durationGroup.hidden);
+
+    actionSelect.value = 'assign_role';
+    await actionSelect.dispatchEvent({ type: 'change' });
+    assert.ok(permissionGroup.hidden && !roleGroup.hidden && !durationGroup.hidden);
+    assert.match(preview.textContent, /contracts\/access_control::assign_role/);
+  });
+
+  test('slider input updates duration display text, ARIA attributes and the call preview', async () => {
+    actionSelect.value = 'assign_role';
+    await actionSelect.dispatchEvent({ type: 'change' });
     durSlider.value = '48';
     await durSlider.dispatchEvent({ type: 'input', target: durSlider });
 
     assert.strictEqual(durVal.textContent, '48');
     assert.strictEqual(durSlider.getAttribute('aria-valuenow'), '48');
     assert.strictEqual(durSlider.getAttribute('aria-valuetext'), '48 Hours');
-    assert.match(preview.textContent, /172800/);
+    assert.match(preview.textContent, /role: Optometrist \(3\), expires_at: now \+ 172800 s/);
   });
 
   test('form submission simulates access grant and updates code console', async () => {
@@ -396,11 +418,62 @@ describe('RBAC Access Control Simulator Logic (#295)', () => {
         prevented = true;
       },
     });
+  test('get_role reads the role from the contract and shows a loading state meanwhile', async () => {
+    let finish;
+    const calls = [];
+    app.AccessControlClient.getRole = (network, user) => {
+      calls.push([network, user]);
+      return new Promise((resolve) => (finish = () => resolve({ contractId: 'CAC', role: 3 })));
+    };
 
-    assert.ok(prevented);
-    await new Promise((resolve) => setTimeout(resolve, 40));
-    assert.match(preview.textContent, /contracts\/vision_records::grant_access/);
-    assert.match(preview.textContent, /GDC\.\.\.PATIENT_KEY_99X/);
+    const done = submit();
+    assert.strictEqual(btn.disabled, true);
+    assert.strictEqual(preview.getAttribute('aria-busy'), 'true');
+    assert.match(preview.textContent, /Status: Pending/);
+
+    finish();
+    await done;
+    assert.deepStrictEqual(calls, [['testnet', USER]]);
+    assert.strictEqual(btn.disabled, false);
+    assert.strictEqual(preview.getAttribute('aria-busy'), null);
+    assert.match(preview.textContent, /contracts\/access_control::get_role/);
+    assert.match(preview.textContent, /Result: Optometrist \(3\)/);
+  });
+
+  test('has_permission passes the selected permission and shows the answer', async () => {
+    const calls = [];
+    app.AccessControlClient.hasPermission = async (network, user, permission) => {
+      calls.push([network, user, permission]);
+      return { contractId: 'CAC', granted: true };
+    };
+    actionSelect.value = 'has_permission';
+    await actionSelect.dispatchEvent({ type: 'change' });
+
+    await submit();
+    assert.deepStrictEqual(calls, [['testnet', USER, 2]]);
+    assert.match(preview.textContent, /permission: WriteRecord \(2\)/);
+    assert.match(preview.textContent, /Result: true/);
+  });
+
+  test('a failed assign_role shows the decoded contract error', async () => {
+    const feedback = [];
+    global.window.showErrorFeedback = (message) => feedback.push(message);
+    app.AccessControlClient.assignRole = async () => {
+      throw new Error('HostError: Error(Contract, #1)\n\nEvent log (newest first): ...');
+    };
+    actionSelect.value = 'assign_role';
+    await actionSelect.dispatchEvent({ type: 'change' });
+
+    await submit();
+    assert.match(preview.textContent, /Status: Failed/);
+    assert.match(
+      preview.textContent,
+      /access_control error Unauthorized \(Error\(Contract, #1\)\)/
+    );
+    assert.doesNotMatch(preview.textContent, /Event log/);
+    assert.strictEqual(feedback.length, 1);
+    assert.match(feedback[0], /Contract call failed: access_control error Unauthorized/);
+    assert.strictEqual(btn.disabled, false);
   });
 });
 

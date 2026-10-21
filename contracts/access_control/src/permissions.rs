@@ -18,7 +18,15 @@ const DEL_PARENT: Symbol = symbol_short!("DEL_PAR");
 
 pub const DEFAULT_MAX_DELEGATION_DEPTH: u32 = 3;
 
-/// Sets the maximum delegation chain depth allowed (admin only).
+/// Sets the maximum delegation chain depth allowed.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address invoking the function; must be the contract administrator.
+/// * `max_depth` - The maximum delegation depth ceiling (e.g., 3).
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` is not the active administrator.
 pub fn set_max_delegation_depth(
     env: &Env,
     caller: &Address,
@@ -29,7 +37,12 @@ pub fn set_max_delegation_depth(
     Ok(())
 }
 
-/// Gets the configured maximum delegation chain depth (default: 3).
+/// Gets the configured maximum delegation chain depth.
+///
+/// Defaults to `DEFAULT_MAX_DELEGATION_DEPTH` (3) if not explicitly set.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
 pub fn get_max_delegation_depth(env: &Env) -> u32 {
     env.storage()
         .instance()
@@ -56,7 +69,17 @@ fn get_delegator_depth(env: &Env, delegator: &Address) -> u32 {
     depth
 }
 
-/// Assigns a role to a user with an optional expiration timestamp (0 = permanent).
+/// Assigns a role to a user with an optional expiration timestamp.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address granting the role; requires authentication and `Permission::ManageUsers` (or admin).
+/// * `user` - The target address receiving the role assignment.
+/// * `role` - The `Role` variant to assign.
+/// * `expires_at` - Unix timestamp when the role expires, or 0 for a permanent assignment.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::ManageUsers` and is not admin.
 pub fn assign_role(
     env: &Env,
     caller: &Address,
@@ -86,6 +109,20 @@ pub fn assign_role(
 
 /// Revokes a user's role assignment.
 pub fn revoke_role(env: &Env, caller: &Address, user: &Address) -> Result<(), AccessControlError> {
+/// Revokes a user's active role assignment.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address revoking the role; requires authentication and `Permission::ManageUsers` (or admin).
+/// * `user` - The target address whose role assignment is being removed.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::ManageUsers` and is not admin.
+pub fn revoke_role(
+    env: &Env,
+    caller: &Address,
+    user: &Address,
+) -> Result<(), AccessControlError> {
     caller.require_auth();
     if !has_permission(env, caller, &Permission::ManageUsers) {
         return Err(AccessControlError::Unauthorized);
@@ -98,6 +135,13 @@ pub fn revoke_role(env: &Env, caller: &Address, user: &Address) -> Result<(), Ac
 }
 
 /// Retrieves the active role assigned to a user, accounting for expiration.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `user` - The address of the user to query.
+///
+/// Returns `Role::Admin` if `user` is the contract admin, the assigned `Role` if active,
+/// or `Role::None` if the assignment has expired or was not found.
 pub fn get_role(env: &Env, user: &Address) -> Role {
     if let Some(admin) = crate::admin::get_admin(env) {
         if &admin == user {
@@ -129,6 +173,13 @@ pub fn get_role(env: &Env, user: &Address) -> Role {
 /// 2. Check custom grants (explicit grant)
 /// 3. Check base permissions of active role
 /// 4. Check ACL groups the user belongs to
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `user` - The address of the user to check.
+/// * `permission` - The permission to verify.
+///
+/// Returns `true` if authorized, `false` otherwise.
 pub fn has_permission(env: &Env, user: &Address, permission: &Permission) -> bool {
     if let Some(admin) = crate::admin::get_admin(env) {
         if &admin == user {
@@ -189,6 +240,17 @@ pub fn has_permission(env: &Env, user: &Address, permission: &Permission) -> boo
 }
 
 /// Checks whether `delegatee` holds a delegated permission from `delegator`.
+///
+/// Checks both full-role delegations and scoped permission delegations,
+/// verifying that neither delegation has expired.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `delegator` - The address granting the delegation.
+/// * `delegatee` - The address receiving the delegated authority.
+/// * `permission` - The permission to verify.
+///
+/// Returns `true` if the delegatee holds the active permission, `false` otherwise.
 pub fn has_delegated_permission(
     env: &Env,
     delegator: &Address,
@@ -229,7 +291,17 @@ pub fn has_delegated_permission(
     false
 }
 
-/// Grants a custom permission directly to a user.
+/// Grants a custom permission directly to a user's role assignment.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address granting the permission; requires authentication and `Permission::ManageUsers` (or admin).
+/// * `user` - The target address receiving the custom permission grant.
+/// * `permission` - The `Permission` variant to grant.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::ManageUsers` and is not admin.
+/// * `AccessControlError::NotFound` - If `user` does not have an active role assignment in storage.
 pub fn grant_custom_permission(
     env: &Env,
     caller: &Address,
@@ -254,6 +326,16 @@ pub fn grant_custom_permission(
 }
 
 /// Revokes a custom permission from a user (explicit deny).
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The address executing the revocation; requires authentication and `Permission::ManageUsers` (or admin).
+/// * `user` - The target address whose permission is being revoked.
+/// * `permission` - The `Permission` variant to explicitly deny.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::ManageUsers` and is not admin.
+/// * `AccessControlError::NotFound` - If `user` does not have an active role assignment in storage.
 pub fn revoke_custom_permission(
     env: &Env,
     caller: &Address,
@@ -278,6 +360,16 @@ pub fn revoke_custom_permission(
 }
 
 /// Delegates an entire role from delegator to delegatee.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `delegator` - The delegating address; requires authentication.
+/// * `delegatee` - The address receiving the delegated role.
+/// * `role` - The `Role` variant to delegate.
+/// * `expires_at` - Unix timestamp when the delegation expires, or 0 for permanent delegation.
+///
+/// # Errors
+/// * `AccessControlError::DelegationDepthExceeded` - If adding this delegation exceeds the configured `MAX_DEL_DEPTH`.
 pub fn delegate_role(
     env: &Env,
     delegator: &Address,
@@ -308,7 +400,12 @@ pub fn delegate_role(
     Ok(())
 }
 
-/// Revokes a role delegation.
+/// Revokes an active full-role delegation.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `delegator` - The address that created the delegation; requires authentication.
+/// * `delegatee` - The address whose delegated role is being revoked.
 pub fn revoke_delegation(
     env: &Env,
     delegator: &Address,
@@ -324,6 +421,16 @@ pub fn revoke_delegation(
 }
 
 /// Delegates specific scoped permissions from delegator to delegatee.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `delegator` - The delegating address; requires authentication.
+/// * `delegatee` - The address receiving the scoped permissions.
+/// * `permissions` - A list of `Permission` variants to delegate.
+/// * `expires_at` - Unix timestamp when the delegation expires, or 0 for permanent delegation.
+///
+/// # Errors
+/// * `AccessControlError::DelegationDepthExceeded` - If adding this delegation exceeds the configured `MAX_DEL_DEPTH`.
 pub fn delegate_permissions(
     env: &Env,
     delegator: &Address,
@@ -354,7 +461,12 @@ pub fn delegate_permissions(
     Ok(())
 }
 
-/// Revokes a scoped delegation.
+/// Revokes an active scoped delegation.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `delegator` - The address that granted the scoped delegation; requires authentication.
+/// * `delegatee` - The address whose scoped permissions are being revoked.
 pub fn revoke_scoped_delegation(
     env: &Env,
     delegator: &Address,
@@ -370,6 +482,15 @@ pub fn revoke_scoped_delegation(
 }
 
 /// Creates a new ACL group with a set of permissions.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The caller creating the group; requires authentication and `Permission::ManageAccess` (or admin).
+/// * `group_name` - The unique identifier symbol for the group.
+/// * `permissions` - The list of `Permission` variants granted to members of this group.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::ManageAccess` and is not admin.
 pub fn create_group(
     env: &Env,
     caller: &Address,
@@ -390,6 +511,17 @@ pub fn create_group(
 }
 
 /// Adds a user to an existing ACL group.
+///
+/// If the user is already a member, this operation is idempotent and returns `Ok(())`.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The caller adding the user; requires authentication and `Permission::ManageAccess` (or admin).
+/// * `user` - The target address to add to the group.
+/// * `group_name` - The identifier symbol of the target ACL group.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::ManageAccess` and is not admin.
 pub fn add_to_group(
     env: &Env,
     caller: &Address,
@@ -421,6 +553,15 @@ pub fn add_to_group(
 }
 
 /// Removes a user from an ACL group.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The caller removing the user; requires authentication and `Permission::ManageAccess` (or admin).
+/// * `user` - The target address to remove from the group.
+/// * `group_name` - The identifier symbol of the ACL group.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::ManageAccess` and is not admin.
 pub fn remove_from_group(
     env: &Env,
     caller: &Address,
@@ -448,6 +589,10 @@ pub fn remove_from_group(
 }
 
 /// Returns the list of ACL groups a user belongs to.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `user` - The address of the user to query.
 pub fn get_user_groups(env: &Env, user: &Address) -> Vec<Symbol> {
     env.storage()
         .persistent()
@@ -456,6 +601,16 @@ pub fn get_user_groups(env: &Env, user: &Address) -> Vec<Symbol> {
 }
 
 /// Creates or updates an attribute-based access policy.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The caller creating the policy; requires authentication and `Permission::SystemAdmin` (or admin).
+/// * `policy_id` - The unique identifier symbol for the policy.
+/// * `name` - The human-readable name symbol for the policy.
+/// * `conditions` - The `PolicyConditions` struct defining evaluation rules.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::SystemAdmin` and is not admin.
 pub fn create_access_policy(
     env: &Env,
     caller: &Address,
@@ -481,6 +636,15 @@ pub fn create_access_policy(
 }
 
 /// Sets a professional credential for a user.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The caller setting the credential; requires authentication and `Permission::ManageUsers` (or admin).
+/// * `user` - The target address receiving the credential classification.
+/// * `credential` - The `CredentialType` variant to associate with `user`.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::ManageUsers` and is not admin.
 pub fn set_user_credential(
     env: &Env,
     caller: &Address,
@@ -499,6 +663,15 @@ pub fn set_user_credential(
 }
 
 /// Sets the sensitivity level of a medical record.
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `caller` - The caller classifying the record; requires authentication and `Permission::WriteRecord` (or admin).
+/// * `record_id` - The numeric identifier of the record.
+/// * `sensitivity` - The `SensitivityLevel` variant to assign.
+///
+/// # Errors
+/// * `AccessControlError::Unauthorized` - If `caller` lacks `Permission::WriteRecord` and is not admin.
 pub fn set_record_sensitivity(
     env: &Env,
     caller: &Address,
@@ -517,6 +690,15 @@ pub fn set_record_sensitivity(
 }
 
 /// Evaluates an ABAC policy against context (user role, credential, sensitivity, time).
+///
+/// # Arguments
+/// * `env` - The Soroban environment.
+/// * `policy_id` - The identifier symbol of the policy to evaluate.
+/// * `user` - The address of the user requesting access.
+/// * `record_id` - The numeric identifier of the record being accessed.
+/// * `current_time` - Current Unix timestamp for evaluating time window constraints.
+///
+/// Returns `true` if all policy criteria are satisfied, `false` otherwise.
 pub fn evaluate_access_policy(
     env: &Env,
     policy_id: Symbol,
