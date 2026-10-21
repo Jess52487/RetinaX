@@ -4,9 +4,9 @@ use crate::admin::{
 };
 use crate::errors::ContractError;
 use crate::examination::validate_string;
-use crate::types::{
-    BatchPrescriptionInput, LensType, OptionalContactLensData, Prescription, PrescriptionData,
-};
+use crate::types::{LensType, OptionalContactLensData, Prescription, PrescriptionData};
+use fhir::types::{MedicationRequest, MedicationRequestIntent, MedicationRequestStatus};
+use fhir::validation;
 use access_control::Permission;
 use soroban_sdk::{symbol_short, Address, Env, String, Symbol, Vec};
 
@@ -238,79 +238,81 @@ pub fn get_prescription(
     }
 }
 
-/// Write authorization shared by every prescription mutation: `WriteRecord` through
-/// `access_control` when it is configured, otherwise the `vision_records` contract.
-fn require_write_access(env: &Env, caller: &Address) -> Result<(), ContractError> {
-    require_initialized(env)?;
-
-    if get_access_control_contract(env).is_some() {
-        if !check_permission(env, caller, Permission::WriteRecord)? {
-            return Err(ContractError::Unauthorized);
-        }
+/// Map a stored [`Prescription`] to a FHIR R4 [`MedicationRequest`].
+///
+/// * `medication[x]` is coded with SNOMED CT `50121007` (Eye glasses) or
+///   `57368009` (Contact lenses) depending on `lens_type`, using the
+///   canonical SNOMED system URI.
+/// * Per-eye lens parameters (sphere / cylinder / axis / addition / PD) are
+///   carried in `dosage_text`, labelled with the LOINC EYE.GLASSES
+///   prescription codes (`28826-6`, `28827-4`, `28828-2`, `28810-0`,
+///   `28842-3`, `28843-1`, `28844-9`, `28812-6`, `28858-9`).
+/// * `status` is derived from the ledger clock: `active` while
+///   `env.ledger().timestamp() < expires_at`, otherwise `completed`.
+/// * `intent` is `order`; `authoredOn` is `issued_at`; the dispense
+///   validity period spans `issued_at ..= expires_at`.
+pub fn prescription_to_fhir(env: &Env, rx: &Prescription, subject_id: String) -> MedicationRequest {
+    let status = if env.ledger().timestamp() < rx.expires_at {
+        MedicationRequestStatus::Active
     } else {
-        require_authorized_vision_records(env, caller)?;
-    }
-    Ok(())
-}
-
-fn require_batch_size(len: u32) -> Result<(), ContractError> {
-    if len == 0 || len > MAX_PRESCRIPTION_BATCH {
-        return Err(ContractError::InvalidInput);
-    }
-    Ok(())
-}
-
-fn store_pending(
-    env: &Env,
-    rx_id: u64,
-    patient: Address,
-    provider: Address,
-    prescription_data: PrescriptionData,
-    prepared_at: u64,
-) {
-    let pending: PendingPrescription = (
-        patient.clone(),
-        provider.clone(),
-        prescription_data,
-        prepared_at,
-    );
-    env.storage()
-        .temporary()
-        .set(&(PENDING_RX_KEY, rx_id), &pending);
-    crate::events::publish_prescription_prepared(env, rx_id, patient, provider);
-}
-
-fn load_pending(env: &Env, rx_id: u64) -> Result<PendingPrescription, ContractError> {
-    env.storage()
-        .temporary()
-        .get(&(PENDING_RX_KEY, rx_id))
-        .ok_or(ContractError::InvalidPhase)
-}
-
-fn commit_pending(env: &Env, caller: &Address, rx_id: u64, pending: PendingPrescription) {
-    let (patient, provider, prescription_data, prepared_at) = pending;
-    let prescription = Prescription {
-        id: rx_id,
-        patient,
-        provider,
-        lens_type: LensType::Glasses,
-        left_eye: prescription_data.clone(),
-        right_eye: prescription_data,
-        contact_data: OptionalContactLensData::None,
-        issued_at: prepared_at,
-        expires_at: prepared_at.saturating_add(PRESCRIPTION_VALIDITY_SECS),
-        verified: false,
-        metadata_hash: String::from_str(env, ""),
+        MedicationRequestStatus::Completed
     };
 
-    env.storage()
-        .persistent()
-        .set(&(PRESCRIPTION_KEY, rx_id), &prescription);
-    env.storage().temporary().remove(&(PENDING_RX_KEY, rx_id));
-    crate::events::publish_prescription_committed(env, rx_id, caller.clone());
-}
+    let (med_code, med_display) = match rx.lens_type {
+        LensType::Glasses => (validation::SNOMED_EYE_GLASSES, "Eye glasses"),
+        LensType::ContactLens => (validation::SNOMED_CONTACT_LENSES, "Contact lenses"),
+    };
 
-fn discard_pending(env: &Env, caller: &Address, rx_id: u64) {
-    env.storage().temporary().remove(&(PENDING_RX_KEY, rx_id));
-    crate::events::publish_prescription_rolled_back(env, rx_id, caller.clone());
+    let mut dosage = alloc::format!(
+        "OD: SPH {sr} [{csr}] CYL {cr} [{ccr}] AXIS {ar} [{car}] ADD {adr} [{adrc}]; \
+         OS: SPH {sl} [{csl}] CYL {cl} [{ccl}] AXIS {al} [{cal}] ADD {adl} [{adlc}]; \
+         PD R {pdr} L {pdl} mm [{cpd}]",
+        sr = rx.right_eye.sphere,
+        csr = validation::LOINC_RX_SPHERE_RIGHT,
+        cr = rx.right_eye.cylinder,
+        ccr = validation::LOINC_RX_CYLINDER_RIGHT,
+        ar = rx.right_eye.axis,
+        car = validation::LOINC_RX_AXIS_RIGHT,
+        adr = rx.right_eye.add,
+        adrc = validation::LOINC_RX_ADD_RIGHT,
+        sl = rx.left_eye.sphere,
+        csl = validation::LOINC_RX_SPHERE_LEFT,
+        cl = rx.left_eye.cylinder,
+        ccl = validation::LOINC_RX_CYLINDER_LEFT,
+        al = rx.left_eye.axis,
+        cal = validation::LOINC_RX_AXIS_LEFT,
+        adl = rx.left_eye.add,
+        adlc = validation::LOINC_RX_ADD_LEFT,
+        pdr = rx.right_eye.pd,
+        pdl = rx.left_eye.pd,
+        cpd = validation::LOINC_RX_PD_BINOCULAR,
+    );
+
+    if let OptionalContactLensData::Some(cl) = &rx.contact_data {
+        dosage = alloc::format!(
+            "{}; CL [{}]: BC {} DIA {} brand {}",
+            dosage,
+            validation::SNOMED_CONTACT_LENSES,
+            cl.base_curve,
+            cl.diameter,
+            cl.brand
+        );
+    }
+
+    let id = String::from_str(env, &alloc::format!("rx-{}", rx.id));
+
+    MedicationRequest {
+        id,
+        status,
+        intent: MedicationRequestIntent::Order,
+        medication_system: String::from_str(env, validation::SNOMED_SYSTEM),
+        medication_code: String::from_str(env, med_code),
+        medication_display: String::from_str(env, med_display),
+        subject_id,
+        requester_id: rx.provider.to_string(),
+        authored_on: rx.issued_at,
+        validity_period_start: rx.issued_at,
+        validity_period_end: rx.expires_at,
+        dosage_text: String::from_str(env, &dosage),
+    }
 }

@@ -127,6 +127,10 @@
   to { transform: rotate(360deg); }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .btn-loading::after { animation: none; }
+}
+
 /* Icon Buttons */
 .btn-icon-only {
   padding: 0.75rem;

@@ -26,8 +26,9 @@ use soroban_sdk::{
 use delegation::Delegation;
 use execution::timelock_duration;
 use proposal::{
-    load as load_proposal, next_id, pass_threshold_bps, quorum_bps, store as store_proposal,
-    veto_threshold_bps, Proposal, ProposalAction, ProposalPhase, ProposalType,
+    load as load_proposal, load_supply_snapshot, next_id, pass_threshold_bps, quorum_bps,
+    store as store_proposal, store_supply_snapshot, veto_threshold_bps, Proposal, ProposalAction,
+    ProposalPhase, ProposalType,
 };
 use voting::{
     compute_vote_power, has_committed, has_voted, load_commit, store_commit, store_vote,
@@ -41,6 +42,7 @@ const INITIALIZED: Symbol = symbol_short!("INIT");
 const STAKING_CONTRACT: Symbol = symbol_short!("STK_CTR");
 const TREASURY_CONTRACT: Symbol = symbol_short!("TRES_CTR");
 const TOTAL_VOTE_SUPPLY: Symbol = symbol_short!("TOT_VS");
+const VOTING_SECS: Symbol = symbol_short!("VOTE_SEC");
 
 /// Default Discussion phase length in seconds (3 days).
 const DEFAULT_DISCUSSION_SECS: u64 = 259_200;
@@ -168,7 +170,7 @@ impl GovernorContract {
 
         let now = env.ledger().timestamp();
         let discussion_ends = now.saturating_add(DEFAULT_DISCUSSION_SECS);
-        let voting_ends = discussion_ends.saturating_add(DEFAULT_VOTING_SECS);
+        let voting_ends = discussion_ends.saturating_add(Self::get_voting_period(env.clone()));
         let timelock_len = timelock_duration(&proposal_type);
         let timelock_ends = voting_ends.saturating_add(timelock_len);
 
@@ -192,6 +194,9 @@ impl GovernorContract {
         };
 
         store_proposal(&env, &proposal);
+        // Snapshot the vote supply so later parameter changes never apply
+        // retroactively to this proposal's quorum or veto thresholds.
+        store_supply_snapshot(&env, id, Self::current_vote_supply(&env));
         events::publish_proposal_created(&env, &proposal);
 
         Ok(id)
@@ -246,11 +251,8 @@ impl GovernorContract {
                     return Err(ContractError::PhaseNotAdvanceable);
                 }
                 // Check quorum.
-                let total_supply: i128 = env
-                    .storage()
-                    .instance()
-                    .get(&TOTAL_VOTE_SUPPLY)
-                    .unwrap_or(1);
+                let total_supply = load_supply_snapshot(&env, proposal_id)
+                    .unwrap_or_else(|| Self::current_vote_supply(&env));
                 let total_votes = proposal
                     .votes_for
                     .saturating_add(proposal.votes_against)
@@ -275,11 +277,8 @@ impl GovernorContract {
 
             ProposalPhase::Timelock => {
                 // Check veto first.
-                let total_supply: i128 = env
-                    .storage()
-                    .instance()
-                    .get(&TOTAL_VOTE_SUPPLY)
-                    .unwrap_or(1);
+                let total_supply = load_supply_snapshot(&env, proposal_id)
+                    .unwrap_or_else(|| Self::current_vote_supply(&env));
                 let veto_threshold =
                     total_supply * veto_threshold_bps(&proposal.proposal_type) as i128 / 10_000;
                 if proposal.votes_veto >= veto_threshold {
@@ -569,6 +568,39 @@ impl GovernorContract {
         Ok(())
     }
 
+    // ── Governance-controlled parameters ──────────────────────────────────────
+
+    /// Update the Voting phase length used for proposals created afterwards.
+    ///
+    /// Only the governor itself may call this, i.e. the change must be enacted
+    /// through a passed `ParameterChange` proposal.  Proposals that already
+    /// exist keep the `voting_ends` computed at creation.
+    pub fn set_voting_period(env: Env, caller: Address, secs: u64) -> Result<(), ContractError> {
+        Self::require_initialized(&env)?;
+        caller.require_auth();
+        if caller != env.current_contract_address() {
+            return Err(ContractError::Unauthorized);
+        }
+        if secs == 0 {
+            return Err(ContractError::InvalidInput);
+        }
+        env.storage().instance().set(&VOTING_SECS, &secs);
+        Ok(())
+    }
+
+    /// Voting phase length (seconds) applied to newly created proposals.
+    pub fn get_voting_period(env: Env) -> u64 {
+        env.storage()
+            .instance()
+            .get(&VOTING_SECS)
+            .unwrap_or(DEFAULT_VOTING_SECS)
+    }
+
+    /// Total vote supply in effect for an existing proposal's thresholds.
+    pub fn get_proposal_vote_supply(env: Env, proposal_id: u64) -> Option<i128> {
+        load_supply_snapshot(&env, proposal_id)
+    }
+
     // ── View functions ────────────────────────────────────────────────────────
 
     pub fn get_proposal(env: Env, proposal_id: u64) -> Option<Proposal> {
@@ -630,6 +662,13 @@ impl GovernorContract {
             return Err(ContractError::NotInitialized);
         }
         Ok(())
+    }
+
+    fn current_vote_supply(env: &Env) -> i128 {
+        env.storage()
+            .instance()
+            .get(&TOTAL_VOTE_SUPPLY)
+            .unwrap_or(1)
     }
 
     fn require_admin(env: &Env, caller: &Address) -> Result<(), ContractError> {
@@ -720,3 +759,18 @@ mod tests;
 
 #[cfg(test)]
 mod test_timelock_delay;
+
+#[cfg(test)]
+mod test_helpers;
+
+#[cfg(test)]
+mod test_loyalty_multiplier;
+
+#[cfg(test)]
+mod test_delegation_weight;
+
+#[cfg(test)]
+mod test_timelock_integration;
+
+#[cfg(test)]
+mod test_parameter_change;

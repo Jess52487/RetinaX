@@ -133,9 +133,26 @@ body {
 
 body.page-transitioning { opacity: 0; transition: opacity 180ms ease-in; }
 @keyframes page-enter { from { opacity: 0; } to { opacity: 1; } }
+.rx-fade-in {
+  animation: rx-fade-in 320ms ease-out both;
+}
+@keyframes rx-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.rx-shimmer {
+  background: linear-gradient(100deg, transparent 20%, rgba(255,255,255,.12) 45%, transparent 70%);
+  background-size: 220% 100%;
+  animation: rx-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes rx-shimmer {
+  from { background-position: 120% 0; }
+  to { background-position: -20% 0; }
+}
 @media (prefers-reduced-motion: reduce) {
   body { animation: none; }
   body.page-transitioning { opacity: 1; transition: none; }
+  .rx-fade-in, .rx-shimmer { animation: none; }
 }
 
 .container {

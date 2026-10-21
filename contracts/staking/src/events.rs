@@ -156,6 +156,37 @@ pub struct AccessViolationEvent {
     pub timestamp: u64,
 }
 
+/// Fired when a slashed validator files a recovery appeal.
+#[soroban_sdk::contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AppealFiledEvent {
+    pub appeal_id: u64,
+    pub validator: Address,
+    pub slash_id: u64,
+    pub requested_amount: i128,
+    pub timestamp: u64,
+}
+
+/// Fired when governance resolves a slash-recovery appeal.
+#[soroban_sdk::contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum AppealOutcome {
+    Approved,
+    Rejected,
+}
+
+/// Fired when governance resolves an appeal (approved or rejected).
+#[soroban_sdk::contracttype]
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub struct AppealResolvedEvent {
+    pub appeal_id: u64,
+    pub validator: Address,
+    pub slash_id: u64,
+    pub approved_amount: i128,
+    pub outcome: AppealOutcome,
+    pub timestamp: u64,
+}
+
 // ── Publishers ──────────────────────────────────────────────────────────────
 
 pub fn publish_initialized(
@@ -367,6 +398,50 @@ pub fn publish_access_violation(
             caller,
             action,
             required_permission,
+            timestamp: env.ledger().timestamp(),
+        },
+    );
+}
+
+pub fn publish_appeal_filed(
+    env: &Env,
+    appeal_id: u64,
+    validator: Address,
+    slash_id: u64,
+    requested_amount: i128,
+) {
+    env.events().publish(
+        (symbol_short!("APL_FILE"), validator.clone()),
+        AppealFiledEvent {
+            appeal_id,
+            validator,
+            slash_id,
+            requested_amount,
+            timestamp: env.ledger().timestamp(),
+        },
+    );
+}
+
+pub fn publish_appeal_resolved(
+    env: &Env,
+    appeal_id: u64,
+    validator: Address,
+    slash_id: u64,
+    approved_amount: i128,
+    status: crate::AppealStatus,
+) {
+    let outcome = match status {
+        crate::AppealStatus::Approved => AppealOutcome::Approved,
+        _ => AppealOutcome::Rejected,
+    };
+    env.events().publish(
+        (symbol_short!("APL_RES"), validator.clone()),
+        AppealResolvedEvent {
+            appeal_id,
+            validator,
+            slash_id,
+            approved_amount,
+            outcome,
             timestamp: env.ledger().timestamp(),
         },
     );
