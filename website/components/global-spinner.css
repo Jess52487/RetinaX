@@ -91,3 +91,7 @@
   margin: 0;
   text-align: center;
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .global-spinner-ring { animation: none; }
+}
